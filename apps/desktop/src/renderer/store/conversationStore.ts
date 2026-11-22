@@ -72,6 +72,11 @@ export const useConversationStore = create<ConversationState>((set) => ({
   setSignerBuffer: (signs) => set({ signerBuffer: signs, pendingCaption: signs.join(' ') }),
   addSignToBuffer: (sign) =>
     set((state) => {
+      if (!sign || sign.trim() === '') return state;
+      const len = state.signerBuffer.length;
+      if (len > 0 && state.signerBuffer[len - 1] === sign) {
+        return state;
+      }
       const nextBuffer = [...state.signerBuffer, sign];
       return { signerBuffer: nextBuffer, pendingCaption: nextBuffer.join(' ') };
     }),

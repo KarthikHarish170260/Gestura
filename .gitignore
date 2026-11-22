@@ -43,6 +43,8 @@ apps/desktop/release/
 # Database & Runtime Data
 *.sqlite3
 *.db
+*.db-shm
+*.db-wal
 *.sqlite
 user_samples/
 temp_audio/

@@ -1,9 +1,19 @@
 import { app, BrowserWindow, ipcMain, session } from 'electron';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { SidecarSupervisor } from './sidecarSupervisor';
 
 // Process security flags
 const sidecarToken = crypto.randomBytes(32).toString('hex');
+const sidecarPort = 8000;
+const sidecarHost = '127.0.0.1';
+
+const supervisor = new SidecarSupervisor({
+  host: sidecarHost,
+  port: sidecarPort,
+  token: sidecarToken,
+});
+
 let mainWindow: BrowserWindow | null = null;
 
 function createWindow(): void {
@@ -53,18 +63,28 @@ function createWindow(): void {
 // IPC allowlist handler
 ipcMain.handle('app:get-sidecar-config', () => {
   return {
-    port: 8000,
+    port: sidecarPort,
     token: sidecarToken,
-    host: '127.0.0.1',
+    host: sidecarHost,
   };
 });
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Start supervised sidecar process
+  await supervisor.start();
   createWindow();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+});
+
+app.on('before-quit', () => {
+  supervisor.stop();
+});
+
+process.on('exit', () => {
+  supervisor.stop();
 });
 
 app.on('window-all-closed', () => {

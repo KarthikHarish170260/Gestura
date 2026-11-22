@@ -11,7 +11,15 @@ from gestura_sidecar.config import SidecarSettings
 from gestura_sidecar.db.database import init_db
 from gestura_sidecar.logging_config import configure_logging
 from gestura_sidecar.metrics import REQUEST_COUNTER, export_metrics_bytes
-from gestura_sidecar.routers import health, sessions, settings, speech, vocabulary
+from gestura_sidecar.routers import (
+    health,
+    samples,
+    sessions,
+    settings,
+    speech,
+    training,
+    vocabulary,
+)
 from gestura_sidecar.security import verify_auth_token
 
 
@@ -79,6 +87,9 @@ def create_app(app_settings: SidecarSettings | None = None) -> FastAPI:
     app.include_router(sessions.router, dependencies=[Depends(auth_dependency)])
     app.include_router(vocabulary.router, dependencies=[Depends(auth_dependency)])
     app.include_router(speech.router, dependencies=[Depends(auth_dependency)])
+    app.include_router(samples.router, dependencies=[Depends(auth_dependency)])
+    app.include_router(training.router, dependencies=[Depends(auth_dependency)])
+    app.include_router(training.ws_router, dependencies=[Depends(auth_dependency)])
 
     return app
 
