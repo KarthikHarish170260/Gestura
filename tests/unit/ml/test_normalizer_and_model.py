@@ -1,6 +1,7 @@
 """Unit tests for landmark normalization and PyTorch 1D-TCN model (TDD)."""
 
 import numpy as np
+import pytest
 import torch
 
 from ml.dataset.normalizer import LandmarkNormalizer
@@ -42,6 +43,16 @@ def test_landmark_normalizer_math() -> None:
     # Test mirror augmentation: x-coordinates are negated and left/right hands are swapped
     mirrored = normalizer.normalize_frame(raw_frame, mirror=True)
     assert np.isclose(mirrored[0], -1.5, atol=1e-3)
+
+    # Test invalid length
+    with pytest.raises(ValueError):
+        normalizer.normalize_frame(np.zeros(100, dtype=np.float32))
+
+    # Test normalize_sequence on 32-frame array
+    seq = np.array([raw_frame for _ in range(32)], dtype=np.float32)
+    norm_seq = normalizer.normalize_sequence(seq, mirror=False)
+    assert norm_seq.shape == (32, 162)
+    assert np.isclose(norm_seq[0, 63], 1.5, atol=1e-3)
 
 
 def test_tcn_model_forward_pass_dimensions() -> None:

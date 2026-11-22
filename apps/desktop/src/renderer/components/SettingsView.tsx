@@ -80,7 +80,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenSUSModal }) =>
                 }`}
               >
                 <div className="font-bold text-xs">ISL (Indian Sign Language)</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">Topic-comment interrogative final grammar</div>
+                <div className="text-[10px] text-slate-400 mt-0.5">Topic-comment interrogative final grammar</div>
               </button>
 
               <button
@@ -93,7 +93,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenSUSModal }) =>
                 }`}
               >
                 <div className="font-bold text-xs">ASL (American Sign Language)</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">Standard North American gloss set</div>
+                <div className="text-[10px] text-slate-400 mt-0.5">Standard North American gloss set</div>
               </button>
             </div>
           </div>
@@ -106,12 +106,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenSUSModal }) =>
             </div>
 
             <div className="space-y-3">
-              <label className="flex items-center justify-between p-3 rounded-lg bg-slate-950 border border-slate-800 cursor-pointer">
+              <label htmlFor="high-contrast-toggle" className="flex items-center justify-between p-3 rounded-lg bg-slate-950 border border-slate-800 cursor-pointer">
                 <div>
                   <div className="text-xs font-semibold text-slate-200">High-Contrast Theme</div>
-                  <div className="text-[10px] text-slate-500">Pure black background with maximum luminance borders</div>
+                  <div className="text-[10px] text-slate-400">Pure black background with maximum luminance borders</div>
                 </div>
                 <input
+                  id="high-contrast-toggle"
+                  aria-label="High-Contrast Theme"
                   type="checkbox"
                   checked={settings.highContrast}
                   onChange={(e) => updateSettings({ highContrast: e.target.checked })}
@@ -119,12 +121,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenSUSModal }) =>
                 />
               </label>
 
-              <label className="flex items-center justify-between p-3 rounded-lg bg-slate-950 border border-slate-800 cursor-pointer">
+              <label htmlFor="large-type-toggle" className="flex items-center justify-between p-3 rounded-lg bg-slate-950 border border-slate-800 cursor-pointer">
                 <div>
                   <div className="text-xs font-semibold text-slate-200">Large-Type Mode</div>
-                  <div className="text-[10px] text-slate-500">Boosts conversation transcript and button typography</div>
+                  <div className="text-[10px] text-slate-400">Boosts conversation transcript and button typography</div>
                 </div>
                 <input
+                  id="large-type-toggle"
+                  aria-label="Large-Type Mode"
                   type="checkbox"
                   checked={settings.largeType}
                   onChange={(e) => updateSettings({ largeType: e.target.checked })}
@@ -134,10 +138,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenSUSModal }) =>
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-medium text-slate-300">Caption Font Size</span>
+                  <label htmlFor="caption-font-size" className="text-xs font-medium text-slate-300">Caption Font Size</label>
                   <span className="text-xs font-mono font-bold text-indigo-400">{settings.captionFontSize}px</span>
                 </div>
                 <input
+                  id="caption-font-size"
+                  aria-label="Caption Font Size"
                   type="range"
                   min={14}
                   max={28}
@@ -162,18 +168,24 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenSUSModal }) =>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1">Microphone Input</label>
-                <select className="w-full rounded-lg bg-slate-950 border border-slate-800 px-3 py-2 text-xs text-slate-200">
+                <label htmlFor="mic-input-select" className="block text-xs font-medium text-slate-400 mb-1">Microphone Input</label>
+                <select
+                  id="mic-input-select"
+                  aria-label="Microphone Input Device"
+                  className="w-full rounded-lg bg-slate-950 border border-slate-800 px-3 py-2 text-xs text-slate-200"
+                >
                   <option value="default">Default System Microphone (16 kHz Mono)</option>
                 </select>
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium text-slate-400">TTS Speech Rate</span>
+                  <label htmlFor="tts-speech-rate" className="text-xs font-medium text-slate-400">TTS Speech Rate</label>
                   <span className="text-xs font-mono font-bold text-emerald-400">{settings.ttsRate}x</span>
                 </div>
                 <input
+                  id="tts-speech-rate"
+                  aria-label="TTS Speech Rate"
                   type="range"
                   min={0.75}
                   max={1.5}

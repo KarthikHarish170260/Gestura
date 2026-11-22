@@ -26,7 +26,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComp
               {step === 3 && 'Calibration & First Signs'}
             </span>
           </div>
-          <span className="text-xs text-slate-500 font-mono">Step {step} of 3</span>
+          <span className="text-xs text-slate-400 font-mono">Step {step} of 3</span>
         </div>
 
         {/* Step 1: Privacy & Offline Mode */}

@@ -109,13 +109,14 @@ export const SUSSurveyModal: React.FC<SUSSurveyModalProps> = ({ isOpen, onClose 
                   </div>
 
                   <div className="flex items-center justify-between pt-1">
-                    <span className="text-[10px] text-slate-500">Strongly Disagree</span>
+                    <span className="text-[10px] text-slate-400">Strongly Disagree</span>
                     <div className="flex gap-4">
                       {[1, 2, 3, 4, 5].map((val) => (
                         <label key={val} className="flex flex-col items-center gap-1 cursor-pointer">
                           <input
                             type="radio"
                             name={`sus-q-${qIdx}`}
+                            aria-label={`Question ${qIdx + 1} rating ${val}`}
                             value={val}
                             checked={answers[qIdx] === val}
                             onChange={() => handleScoreChange(qIdx, val)}
@@ -125,7 +126,7 @@ export const SUSSurveyModal: React.FC<SUSSurveyModalProps> = ({ isOpen, onClose 
                         </label>
                       ))}
                     </div>
-                    <span className="text-[10px] text-slate-500">Strongly Agree</span>
+                    <span className="text-[10px] text-slate-400">Strongly Agree</span>
                   </div>
                 </div>
               ))}

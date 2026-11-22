@@ -85,10 +85,12 @@ export const RecorderTrainer: React.FC = () => {
         {/* Sign Selection & Progress */}
         <div className="space-y-4 flex-1">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+            <label htmlFor="target-vocab-sign" className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
               Target Vocabulary Sign
             </label>
             <select
+              id="target-vocab-sign"
+              aria-label="Target Vocabulary Sign"
               value={selectedSign}
               onChange={(e) => setSelectedSign(e.target.value)}
               className="w-full rounded-lg bg-slate-950 border border-slate-800 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
@@ -121,7 +123,7 @@ export const RecorderTrainer: React.FC = () => {
               <CheckCircle2 className="h-4 w-4 text-emerald-400" />
               <div className="text-xs">
                 <div className="font-semibold text-slate-200">Framing &amp; Hands</div>
-                <div className="text-slate-500">Both hands in view</div>
+                <div className="text-slate-400">Both hands in view</div>
               </div>
             </div>
 
@@ -129,7 +131,7 @@ export const RecorderTrainer: React.FC = () => {
               <CheckCircle2 className="h-4 w-4 text-emerald-400" />
               <div className="text-xs">
                 <div className="font-semibold text-slate-200">Ambient Lighting</div>
-                <div className="text-slate-500">Good facial contrast</div>
+                <div className="text-slate-400">Good facial contrast</div>
               </div>
             </div>
           </div>
@@ -195,7 +197,7 @@ export const RecorderTrainer: React.FC = () => {
               type="button"
               disabled={isTraining}
               onClick={handleRunTrainer}
-              className="w-full flex items-center justify-center gap-2 rounded-lg bg-emerald-600 py-2.5 text-xs font-bold text-white hover:bg-emerald-500 disabled:opacity-40 transition-colors shadow-lg shadow-emerald-600/20"
+              className="w-full flex items-center justify-center gap-2 rounded-lg bg-emerald-700 py-2.5 text-sm font-bold text-white hover:bg-emerald-600 disabled:opacity-40 transition-colors shadow-lg shadow-emerald-700/20"
             >
               <RefreshCw className={`h-4 w-4 ${isTraining ? 'animate-spin' : ''}`} />
               {isTraining ? 'Training Model & Exporting ONNX...' : 'Run One-Click Model Training'}
@@ -211,22 +213,22 @@ export const RecorderTrainer: React.FC = () => {
 
               <div className="grid grid-cols-3 gap-3">
                 <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800">
-                  <div className="text-[10px] uppercase font-bold text-slate-500">Test Accuracy</div>
+                  <div className="text-[10px] uppercase font-bold text-slate-400">Test Accuracy</div>
                   <div className="text-lg font-black text-emerald-400">{trainingMetrics.accuracy}%</div>
                 </div>
 
                 <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800">
-                  <div className="text-[10px] uppercase font-bold text-slate-500">Macro-F1</div>
+                  <div className="text-[10px] uppercase font-bold text-slate-400">Macro-F1</div>
                   <div className="text-lg font-black text-indigo-400">{trainingMetrics.macroF1}</div>
                 </div>
 
                 <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800">
-                  <div className="text-[10px] uppercase font-bold text-slate-500">Inference (p95)</div>
+                  <div className="text-[10px] uppercase font-bold text-slate-400">Inference (p95)</div>
                   <div className="text-lg font-black text-sky-400">0.64 ms</div>
                 </div>
               </div>
 
-              <div className="text-xs text-slate-500 leading-relaxed">
+              <div className="text-xs text-slate-400 leading-relaxed">
                 Exported: <code>gestura_sign_recognizer.onnx</code> (39.8 KB) &amp;{' '}
                 <code>gestura_sign_recognizer_int8.onnx</code> (257.3 KB). Inferred offline via onnxruntime-web.
               </div>

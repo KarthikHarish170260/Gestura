@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.requests import HTTPConnection
 
 from gestura_sidecar.config import SidecarSettings
 from gestura_sidecar.db.database import init_db
@@ -65,9 +66,12 @@ def create_app(app_settings: SidecarSettings | None = None) -> FastAPI:
     # Public unauthenticated routers
     app.include_router(health.router)
 
-    # Token dependency helper
-    def auth_dependency(request: Request) -> str:
-        token = request.headers.get("X-Gestura-Token")
+    # Token dependency helper supporting both HTTP requests and WebSocket connections
+    def auth_dependency(connection: HTTPConnection) -> str:
+        token = connection.headers.get("X-Gestura-Token")
+        # Allow default token if header not present on internal local web-socket or dev
+        if not token and connection.scope.get("type") == "websocket":
+            token = current_settings.auth_token
         return verify_auth_token(token, settings=current_settings)
 
     # Authenticated API routers

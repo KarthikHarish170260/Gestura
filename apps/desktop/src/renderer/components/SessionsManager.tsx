@@ -109,8 +109,11 @@ export const SessionsManager: React.FC = () => {
 
       {/* Search Input */}
       <div className="relative">
-        <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+        <label htmlFor="search-history" className="sr-only">Search past conversations by keyword</label>
+        <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
         <input
+          id="search-history"
+          aria-label="Search past conversations by keyword"
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -123,8 +126,8 @@ export const SessionsManager: React.FC = () => {
       <div className="flex-1 rounded-xl border border-slate-800 bg-slate-900/50 overflow-hidden">
         <div className="overflow-y-auto h-full">
           {filteredSessions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-xs text-slate-500 space-y-2">
-              <MessageSquare className="h-8 w-8 text-slate-600" />
+            <div className="flex flex-col items-center justify-center h-full text-xs text-slate-400 space-y-2">
+              <MessageSquare className="h-8 w-8 text-slate-400" />
               <span>No matching conversation sessions found.</span>
             </div>
           ) : (
@@ -142,7 +145,7 @@ export const SessionsManager: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-4 text-xs text-slate-500">
+                    <div className="flex items-center gap-4 text-xs text-slate-400">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" /> {s.createdAt}
                       </span>

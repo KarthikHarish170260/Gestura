@@ -153,6 +153,8 @@ export const ConversationView: React.FC = () => {
 
             <div className="flex items-center gap-2">
               <input
+                id="pending-sign-caption"
+                aria-label="Pending sign caption"
                 type="text"
                 value={pendingCaption}
                 onChange={(e) => setPendingCaption(e.target.value)}
@@ -201,6 +203,8 @@ export const ConversationView: React.FC = () => {
 
             <form onSubmit={handleHearingPartnerSubmit} className="flex items-center gap-2">
               <input
+                id="hearing-speech-input"
+                aria-label="Hearing partner spoken English text"
                 type="text"
                 value={inputSpeechText}
                 onChange={(e) => setInputSpeechText(e.target.value)}
@@ -230,7 +234,7 @@ export const ConversationView: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {utterances.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-xs text-slate-500">
+            <div className="flex h-full items-center justify-center text-xs text-slate-400">
               No messages yet in this session. Start signing or speaking above.
             </div>
           ) : (
@@ -258,7 +262,7 @@ export const ConversationView: React.FC = () => {
                       <span className="text-xs font-semibold text-slate-300">
                         {isSigner ? 'Signer (Sign &rarr; Speech)' : 'Hearing Partner (Speech &rarr; Sign)'}
                       </span>
-                      <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono">
+                      <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono">
                         <span>{u.timestamp}</span>
                         <span>{u.confidence * 100}% conf</span>
                         <span>{u.latencyMs}ms</span>
@@ -269,7 +273,7 @@ export const ConversationView: React.FC = () => {
 
                     {u.gloss && (
                       <div className="mt-1 flex items-center gap-1.5">
-                        <span className="text-[10px] uppercase font-bold text-slate-500">Gloss:</span>
+                        <span className="text-[10px] uppercase font-bold text-slate-400">Gloss:</span>
                         <code className="text-xs font-mono font-semibold text-indigo-400">
                           {u.gloss}
                         </code>
