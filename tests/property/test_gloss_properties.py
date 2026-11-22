@@ -1,7 +1,9 @@
 """Property-based tests for Text-to-Gloss engine using Hypothesis."""
 
-from hypothesis import given, settings, strategies as st
-from gestura_sidecar.gloss.engine import TextToGlossEngine, ProvenanceType
+from hypothesis import given, settings
+from hypothesis import strategies as st
+
+from gestura_sidecar.gloss.engine import ProvenanceType, TextToGlossEngine
 from gestura_sidecar.gloss.normalizer import normalize_text
 
 

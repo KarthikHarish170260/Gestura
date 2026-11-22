@@ -1,6 +1,6 @@
 """Unit tests for deterministic rule-based Text-to-Gloss engine (TDD)."""
 
-from gestura_sidecar.gloss.engine import TextToGlossEngine, ProvenanceType
+from gestura_sidecar.gloss.engine import ProvenanceType, TextToGlossEngine
 
 
 def test_contractions_and_normalisation() -> None:
