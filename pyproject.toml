@@ -1,0 +1,104 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gestura"
+version = "0.1.0"
+description = "Offline single-device bidirectional sign-language communication app"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.28.0",
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.2.0",
+    "sqlalchemy>=2.0.28",
+    "alembic>=1.13.1",
+    "structlog>=24.1.0",
+    "prometheus-client>=0.20.0",
+    "websockets>=12.0",
+    "numpy>=1.26.0,<2.0.0",
+    "scipy>=1.12.0",
+    "soundfile>=0.12.1",
+    "torch>=2.2.0",
+    "onnx>=1.15.0",
+    "onnxruntime>=1.17.0",
+    "faster-whisper>=1.0.0",
+    "pyttsx3>=2.90",
+    "codecarbon>=2.3.0",
+    "httpx>=0.27.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-bdd>=7.1.0",
+    "pytest-cov>=4.1.0",
+    "hypothesis>=6.98.0",
+    "mutmut>=2.4.4",
+    "ruff>=0.3.0",
+    "mypy>=1.9.0",
+    "types-requests>=2.31.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["services/sidecar/gestura_sidecar", "ml"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+    "node_modules",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["gestura_sidecar", "ml"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+
+[[tool.mypy.overrides]]
+module = [
+    "faster_whisper.*",
+    "pyttsx3.*",
+    "soundfile.*",
+    "mutmut.*",
+    "scipy.*",
+    "torch.*",
+    "onnx.*",
+    "onnxruntime.*",
+    "codecarbon.*",
+    "pytest_bdd.*",
+    "hypothesis.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+pythonpath = [".", "services/sidecar", "ml"]
+addopts = "-ra -q --strict-markers"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"

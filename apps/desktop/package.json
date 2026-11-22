@@ -1,0 +1,71 @@
+{
+  "name": "gestura-desktop",
+  "version": "0.1.0",
+  "description": "Offline single-device bidirectional sign-language communication app",
+  "author": "Gestura Team",
+  "private": true,
+  "type": "module",
+  "main": "dist-electron/main/index.js",
+  "scripts": {
+    "dev": "vite",
+    "build:vite": "tsc && vite build",
+    "build": "tsc && vite build && electron-builder --dir",
+    "build:win": "tsc && vite build && electron-builder --win",
+    "lint": "eslint src --ext .ts,.tsx --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "preview": "vite preview"
+  },
+  "build": {
+    "appId": "com.gestura.app",
+    "productName": "GESTURA",
+    "electronVersion": "29.1.5",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "win": {
+      "target": ["nsis", "dir"]
+    }
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "^0.10.14",
+    "clsx": "^2.1.0",
+    "lucide-react": "^0.363.0",
+    "onnxruntime-web": "^1.17.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tailwind-merge": "^2.2.2",
+    "zod": "^3.22.4",
+    "zustand": "^4.5.2"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.8.5",
+    "@playwright/test": "^1.42.1",
+    "@types/node": "^20.11.30",
+    "@types/react": "^18.2.67",
+    "@types/react-dom": "^18.2.22",
+    "@typescript-eslint/eslint-plugin": "^7.3.1",
+    "@typescript-eslint/parser": "^7.3.1",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.19",
+    "electron": "29.1.5",
+    "electron-builder": "^24.13.3",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.6",
+    "fast-check": "^3.16.0",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.4.2",
+    "vite": "^5.1.6",
+    "vite-plugin-electron": "^0.28.4",
+    "vite-plugin-electron-renderer": "^0.14.5",
+    "vitest": "^1.4.0"
+  }
+}

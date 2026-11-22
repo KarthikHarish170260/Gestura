@@ -1,0 +1,21 @@
+{
+  "name": "gestura-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Offline single-device bidirectional sign-language communication app",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm --workspace=apps/desktop run dev",
+    "build": "npm --workspace=apps/desktop run build",
+    "lint": "npm --workspace=apps/desktop run lint",
+    "typecheck": "npm --workspace=apps/desktop run typecheck",
+    "test": "npm --workspace=apps/desktop run test",
+    "test:e2e": "npm --workspace=apps/desktop run test:e2e",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,css,md}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.2.5"
+  }
+}
