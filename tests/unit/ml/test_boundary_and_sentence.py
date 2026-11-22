@@ -32,17 +32,23 @@ def test_boundary_detector_confidence_and_top2_margin() -> None:
 
     # Valid clear prediction: class 0 has 0.85, class 1 has 0.10 -> margin = 0.75 >= 0.15
     probs_valid = [0.85, 0.10, 0.05] + [0.0] * 38
-    accepted_sign = detector.filter_prediction(probs_valid, class_labels=["HELLO", "HELP"] + ["OTHER"] * 39)
+    accepted_sign = detector.filter_prediction(
+        probs_valid, class_labels=["HELLO", "HELP"] + ["OTHER"] * 39
+    )
     assert accepted_sign == "HELLO"
 
     # Low confidence rejection: highest prob is 0.50 < 0.65
     probs_low = [0.50, 0.40, 0.10] + [0.0] * 38
-    rejected_low = detector.filter_prediction(probs_low, class_labels=["HELLO", "HELP"] + ["OTHER"] * 39)
+    rejected_low = detector.filter_prediction(
+        probs_low, class_labels=["HELLO", "HELP"] + ["OTHER"] * 39
+    )
     assert rejected_low is None
 
     # Ambiguous margin rejection: top1 = 0.70, top2 = 0.62 -> margin = 0.08 < 0.15
     probs_ambiguous = [0.70, 0.62, 0.08] + [0.0] * 38
-    rejected_ambiguous = detector.filter_prediction(probs_ambiguous, class_labels=["HELLO", "HELP"] + ["OTHER"] * 39)
+    rejected_ambiguous = detector.filter_prediction(
+        probs_ambiguous, class_labels=["HELLO", "HELP"] + ["OTHER"] * 39
+    )
     assert rejected_ambiguous is None
 
 

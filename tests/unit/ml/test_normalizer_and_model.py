@@ -2,6 +2,7 @@
 
 import numpy as np
 import torch
+
 from ml.dataset.normalizer import LandmarkNormalizer
 from ml.models.tcn_model import SignRecognizerTCN
 
@@ -38,9 +39,9 @@ def test_landmark_normalizer_math() -> None:
     # Right wrist relative to midpoint was (0.8 - 0.5) / 0.2 = 1.5
     assert np.isclose(normalized[63], 1.5, atol=1e-3)
 
-    # Test mirror augmentation: x-coordinates are negated
+    # Test mirror augmentation: x-coordinates are negated and left/right hands are swapped
     mirrored = normalizer.normalize_frame(raw_frame, mirror=True)
-    assert np.isclose(mirrored[63], -1.5, atol=1e-3)
+    assert np.isclose(mirrored[0], -1.5, atol=1e-3)
 
 
 def test_tcn_model_forward_pass_dimensions() -> None:

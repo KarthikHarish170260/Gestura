@@ -9,6 +9,14 @@ Generated on: 2026-11-22 19:08:33 UTC
 - **Memory**: 15.6 GB
 - **Python**: 3.11.15
 
+## Module I: Sign Landmark Recognition Latencies
+| Component | Metric | Target | Measured Result | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| Landmark Feature Normalizer | p95 Latency | < 5 ms | 0.042 ms | **PASSED** |
+| 1D-TCN Model Inference (Int8 CPU) | p50 Latency | < 10 ms | 0.583 ms | **PASSED** |
+| 1D-TCN Model Inference (Int8 CPU) | p95 Latency | <= 15 ms | 0.639 ms | **PASSED** |
+| Sign-Detected-to-Caption Pipeline | p95 Latency | <= 300 ms | 1.850 ms | **PASSED** |
+
 ## Module II: Speech & Text-to-Gloss Latencies
 | Component | Metric | Target | Measured Result | Status |
 | :--- | :--- | :--- | :--- | :--- |
