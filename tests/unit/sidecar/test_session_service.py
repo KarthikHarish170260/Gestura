@@ -1,16 +1,16 @@
 """Unit tests for GESTURA session management and database operations (TDD)."""
 
 import pytest
+
 from gestura_sidecar.db.database import get_db, init_db
-from gestura_sidecar.db.models import SessionModel, UtteranceModel
 from gestura_sidecar.routers.sessions import (
-    create_session_record,
-    list_session_records,
-    get_session_record,
-    delete_session_record,
-    wipe_all_sessions,
     add_utterance_record,
+    create_session_record,
+    delete_session_record,
     export_session_data,
+    get_session_record,
+    list_session_records,
+    wipe_all_sessions,
 )
 
 
@@ -49,7 +49,10 @@ def test_add_utterances_and_export_formats() -> None:
             gloss="HELLO HOW YOU",
             confidence=0.96,
             latency_ms=180.5,
-            token_provenance=[{"token": "HELLO", "source": "VOCAB"}, {"token": "HOW", "source": "VOCAB"}],
+            token_provenance=[
+                {"token": "HELLO", "source": "VOCAB"},
+                {"token": "HOW", "source": "VOCAB"},
+            ],
         )
         assert u1.id is not None
 
@@ -61,7 +64,10 @@ def test_add_utterances_and_export_formats() -> None:
             gloss="ME GOOD THANK-YOU",
             confidence=0.99,
             latency_ms=220.0,
-            token_provenance=[{"token": "GOOD", "source": "VOCAB"}, {"token": "THANK-YOU", "source": "VOCAB"}],
+            token_provenance=[
+                {"token": "GOOD", "source": "VOCAB"},
+                {"token": "THANK-YOU", "source": "VOCAB"},
+            ],
         )
         assert u2.id is not None
 
@@ -88,7 +94,7 @@ def test_delete_and_wipe_sessions() -> None:
     """Test deleting an individual session and wiping all session history for privacy."""
     with get_db() as db:
         s1 = create_session_record(db, title="Session 1", sign_language="ISL")
-        s2 = create_session_record(db, title="Session 2", sign_language="ASL")
+        _s2 = create_session_record(db, title="Session 2", sign_language="ASL")
 
         assert len(list_session_records(db)) == 2
 

@@ -2,9 +2,10 @@
 
 import pytest
 from fastapi.testclient import TestClient
-from gestura_sidecar.main import create_app
-from gestura_sidecar.db.database import init_db
+
 from gestura_sidecar.config import SidecarSettings
+from gestura_sidecar.db.database import init_db
+from gestura_sidecar.main import create_app
 
 
 @pytest.fixture
