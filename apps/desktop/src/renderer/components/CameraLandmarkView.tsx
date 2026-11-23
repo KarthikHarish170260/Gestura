@@ -18,8 +18,8 @@ import {
 } from 'lucide-react';
 import { FilesetResolver, HandLandmarker, PoseLandmarker } from '@mediapipe/tasks-vision';
 import { useConversationStore } from '../store/conversationStore';
-import { normalizeLandmarks, RawLandmark } from '../workers/visionWorker';
-import { SlidingWindowRecognizer } from '../workers/recognitionWorker';
+import { RawLandmark } from '../workers/visionWorker';
+import { classifySignGesture, KinematicHoldGater } from '../recognition/spatialSignClassifier';
 
 // 88 comprehensive vocabulary sign classes + UNKNOWN
 const EXPANDED_VOCAB_SIGNS: { id: string; label: string; category: string }[] = [
@@ -122,8 +122,6 @@ const EXPANDED_VOCAB_SIGNS: { id: string; label: string; category: string }[] = 
   { id: 'NIGHT', label: 'Night', category: 'Temporal' },
 ];
 
-const VOCAB_SIGNS = [...EXPANDED_VOCAB_SIGNS.map(s => s.id), 'UNKNOWN'];
-
 const CATEGORIES = [
   'All',
   'Greeting',
@@ -220,10 +218,14 @@ export const CameraLandmarkView: React.FC = () => {
 
   const { settings, updateSettings, addSignToBuffer } = useConversationStore();
 
-  // Recognizer instance ref
-  const recognizerRef = useRef<SlidingWindowRecognizer>(
-    new SlidingWindowRecognizer(VOCAB_SIGNS, 0.60, 0.12, 4)
+  // Kinematic hold gater requiring stable hold duration (380ms) and preventing loop commits
+  const holdGaterRef = useRef<KinematicHoldGater>(
+    new KinematicHoldGater(380, 10, settings.confidenceThreshold)
   );
+
+  useEffect(() => {
+    holdGaterRef.current = new KinematicHoldGater(380, 10, settings.confidenceThreshold);
+  }, [settings.confidenceThreshold]);
 
   const lastCommitTimeRef = useRef<number>(0);
   const lastRecognizedGlossRef = useRef<string>('');
@@ -455,45 +457,45 @@ export const CameraLandmarkView: React.FC = () => {
       if (py > maxY) maxY = py;
     }
 
-    // Gesture Name Classification
+    // Gesture Posture Classification
     let gesture = 'TRACKING';
     let conf = 0.85;
 
     if (openCount === 5) {
-      gesture = 'OPEN PALM (HELLO/FIVE)';
-      conf = 0.96;
+      gesture = 'OPEN PALM';
+      conf = 0.95;
     } else if (openCount === 1 && isThumbExt && landmarks[4].y < landmarks[3].y) {
-      gesture = 'THUMBS UP (GOOD/YES)';
-      conf = 0.96;
+      gesture = 'THUMBS UP';
+      conf = 0.95;
     } else if (openCount === 1 && isThumbExt && landmarks[4].y > landmarks[2].y + 0.04) {
-      gesture = 'THUMBS DOWN (BAD)';
+      gesture = 'THUMBS DOWN';
       conf = 0.95;
     } else if (openCount === 1 && isIndexExt && landmarks[8].y > landmarks[0].y - 0.05) {
-      gesture = 'POINTING CHEST (I/ME)';
+      gesture = 'POINTING CHEST';
       conf = 0.94;
     } else if (openCount === 1 && isIndexExt) {
-      gesture = 'POINTING (YOU)';
+      gesture = 'POINTING';
       conf = 0.94;
     } else if (openCount === 2 && isIndexExt && isMiddleExt) {
-      gesture = 'VICTORY / V SIGN (SEE/TWO)';
+      gesture = 'V SIGN';
       conf = 0.95;
     } else if (openCount === 3 && isThumbExt && isIndexExt && isPinkyExt && !isMiddleExt && !isRingExt) {
-      gesture = 'ILY LOVE SIGN (LOVE)';
+      gesture = 'ILY SIGN (LOVE)';
       conf = 0.97;
     } else if (openCount === 2 && isThumbExt && isPinkyExt && !isIndexExt && !isMiddleExt && !isRingExt) {
-      gesture = 'SHAKA / CALL SIGN (CALL)';
+      gesture = 'SHAKA (CALL)';
       conf = 0.96;
     } else if (openCount === 3 && isIndexExt && isMiddleExt && isRingExt) {
-      gesture = 'W SIGN (WATER/THREE)';
+      gesture = 'W SIGN';
       conf = 0.94;
     } else if (openCount === 4 && !isThumbExt) {
-      gesture = 'FOUR (FOUR)';
+      gesture = 'FOUR FINGERS';
       conf = 0.93;
     } else if (openCount === 0) {
-      gesture = 'FIST (SORRY)';
+      gesture = 'FIST';
       conf = 0.91;
     } else if (distSq(landmarks[4], landmarks[8]) < 0.003) {
-      gesture = 'PINCH / OK SIGN (FOOD/SMALL)';
+      gesture = 'PINCH / OK';
       conf = 0.93;
     }
 
@@ -519,8 +521,6 @@ export const CameraLandmarkView: React.FC = () => {
     let fpsTimer = performance.now();
     let lastVideoTime = -1;
     let lastDetectTime = 0;
-
-    const recognizer = recognizerRef.current;
 
     // Helper: Map normalized landmark to screen coords accounting for mirror
     const mapPt = (pt: { x: number; y: number }, w: number, h: number): [number, number] => {
@@ -659,7 +659,6 @@ export const CameraLandmarkView: React.FC = () => {
 
           for (const { lm, isRight } of handsToRender) {
             const analysis = analyzeHandPosture(lm, w, h);
-            setDetectedGestureTag(analysis.gestureName);
 
             if (showOverlay) {
               ctx.save();
@@ -780,12 +779,9 @@ export const CameraLandmarkView: React.FC = () => {
             }
           }
 
-          // D. REAL-TIME RECOGNITION & SIGN COMMIT
+          // D. REAL-TIME MULTI-FEATURE RECOGNITION & HOLD-GATED COMMIT
           if (rawRightHand || rawLeftHand || rawPose) {
-            const norm = normalizeLandmarks(rawLeftHand, rawRightHand, rawPose, !isMirrored);
-            const pred = recognizer.addFrame(norm.landmarks, now);
-
-            // Compute live motion energy
+            // Compute live motion energy from active hand
             const activeHand = rawRightHand || rawLeftHand;
             if (activeHand && activeHand.length >= 21) {
               const dx = activeHand[8].x - activeHand[0].x;
@@ -794,83 +790,47 @@ export const CameraLandmarkView: React.FC = () => {
               setMotionEnergy(energy);
             }
 
-            // High-confidence recognition trigger
-            let candidateGloss = pred?.gloss ?? 'SEARCHING';
-            let candidateConf = pred?.confidence ?? 0.88;
+            // Accurate anatomical & spatial sign classification
+            const recog = classifySignGesture(rawLeftHand, rawRightHand, rawPose, !isMirrored);
 
-            // Also check geometric gesture for instant response
-            if (handsToRender.length > 0) {
-              const mainHand = handsToRender[0];
-              const hState = analyzeHandPosture(mainHand.lm, w, h);
-              if (hState.gestureName.includes('HELLO')) {
-                candidateGloss = 'HELLO';
-                candidateConf = 0.96;
-              } else if (hState.gestureName.includes('GOOD')) {
-                candidateGloss = 'GOOD';
-                candidateConf = 0.96;
-              } else if (hState.gestureName.includes('BAD')) {
-                candidateGloss = 'BAD';
-                candidateConf = 0.95;
-              } else if (hState.gestureName.includes('YOU')) {
-                candidateGloss = 'YOU';
-                candidateConf = 0.94;
-              } else if (hState.gestureName.includes('I/ME')) {
-                candidateGloss = 'I';
-                candidateConf = 0.94;
-              } else if (hState.gestureName.includes('LOVE')) {
-                candidateGloss = 'LOVE';
-                candidateConf = 0.97;
-              } else if (hState.gestureName.includes('CALL')) {
-                candidateGloss = 'CALL';
-                candidateConf = 0.96;
-              } else if (hState.gestureName.includes('WATER')) {
-                candidateGloss = 'WATER';
-                candidateConf = 0.94;
-              } else if (hState.gestureName.includes('FOOD')) {
-                candidateGloss = 'FOOD';
-                candidateConf = 0.93;
-              } else if (hState.gestureName.includes('SORRY')) {
-                candidateGloss = 'SORRY';
-                candidateConf = 0.92;
-              } else if (hState.gestureName.includes('VICTORY')) {
-                candidateGloss = 'SEE';
-                candidateConf = 0.94;
-              }
-            }
+            setTopCandidates(recog.topCandidates);
+            setDetectedGestureTag(recog.gestureTag);
 
-            // Update candidate rankings
-            setTopCandidates([
-              { gloss: candidateGloss, score: candidateConf },
-              { gloss: candidateGloss === 'HELLO' ? 'THANK-YOU' : 'HELLO', score: Math.max(0.02, 1 - candidateConf) },
-              { gloss: 'HELP', score: 0.01 },
-            ]);
+            // Kinematic hold gater: requires minimum stable hold duration (380ms)
+            // and completely eliminates repeating loop auto-commits
+            const gaterRes = holdGaterRef.current.update(
+              recog.candidateGloss,
+              recog.confidence,
+              recog.isResting,
+              now
+            );
 
-            // Debounced auto-commit
-            if (
-              candidateGloss !== 'SEARCHING' &&
-              candidateGloss !== 'UNKNOWN' &&
-              candidateConf >= settings.confidenceThreshold &&
-              now - lastCommitTimeRef.current > 1800 &&
-              candidateGloss !== lastRecognizedGlossRef.current
-            ) {
+            if (gaterRes.shouldCommit && gaterRes.committedGloss) {
+              const committed = gaterRes.committedGloss;
               lastCommitTimeRef.current = now;
-              lastRecognizedGlossRef.current = candidateGloss;
+              lastRecognizedGlossRef.current = committed;
 
               setRecognizedSign({
-                gloss: candidateGloss,
-                confidence: candidateConf,
+                gloss: committed,
+                confidence: recog.confidence,
                 timestamp: now,
               });
 
-              addSignToBuffer(candidateGloss);
+              addSignToBuffer(committed);
               if (settings.ttsVolume > 0) {
-                speakText(candidateGloss);
+                speakText(committed);
               }
             }
           } else {
-            // When no hands are in frame, decay motion energy
+            // When no hands or body are in frame, decay motion energy and reset gater
             setMotionEnergy((prev) => Math.max(0, prev * 0.9));
             setDetectedGestureTag('RAISE HAND IN VIEW');
+            holdGaterRef.current.reset();
+            setTopCandidates([
+              { gloss: 'SEARCHING', score: 0.10 },
+              { gloss: 'HELLO', score: 0.02 },
+              { gloss: 'HELP', score: 0.01 },
+            ]);
           }
         }
       }
