@@ -31,7 +31,7 @@ test.describe('GESTURA Offline Conversation E2E Flow', () => {
     await expect(captionInput).toHaveValue('HELLO DOCTOR');
 
     // Click Speak button
-    const speakBtn = page.getByRole('button', { name: 'Speak' });
+    const speakBtn = page.getByRole('button', { name: 'Speak', exact: true });
     await speakBtn.click();
 
     // Verify message appears in shared transcript

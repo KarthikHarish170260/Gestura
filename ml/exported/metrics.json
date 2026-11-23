@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-11-22 20:05:13 UTC",
+  "timestamp": "2026-11-23 02:40:03 UTC",
   "num_classes": 41,
   "classes": [
     "HELLO",
@@ -44,12 +44,12 @@
     "EMERGENCY",
     "UNKNOWN"
   ],
-  "test_accuracy": 0.0762,
-  "macro_f1": 0.0379,
+  "test_accuracy": 0.0366,
+  "macro_f1": 0.0138,
   "inference_latency_ms": {
-    "p50": 0.611,
-    "p95": 0.69,
-    "mean": 0.609
+    "p50": 0.536,
+    "p95": 0.602,
+    "mean": 0.589
   },
   "model_sizes_kb": {
     "fp32": 39.9,
