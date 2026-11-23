@@ -12,19 +12,132 @@ import {
   FlipHorizontal,
   Cpu,
   Hand,
+  Search,
 } from 'lucide-react';
 import { FilesetResolver, HandLandmarker, PoseLandmarker } from '@mediapipe/tasks-vision';
 import { useConversationStore } from '../store/conversationStore';
 import { normalizeLandmarks, RawLandmark } from '../workers/visionWorker';
 import { SlidingWindowRecognizer } from '../workers/recognitionWorker';
 
-// 40 vocabulary sign classes + UNKNOWN
-const VOCAB_SIGNS = [
-  'HELLO', 'THANK-YOU', 'YES', 'NO', 'HELP', 'WATER', 'FOOD', 'DOCTOR',
-  'PLEASE', 'SORRY', 'NAME', 'WHAT', 'WHERE', 'WHEN', 'HOW', 'GOOD',
-  'BAD', 'HOME', 'HOSPITAL', 'MEDICINE', 'PAIN', 'FAMILY', 'FRIEND', 'WORK',
-  'TIME', 'TODAY', 'TOMORROW', 'YESTERDAY', 'WANT', 'NEED', 'LIKE', 'UNDERSTAND',
-  'AGAIN', 'STOP', 'GO', 'COME', 'MONEY', 'HAPPY', 'TIRED', 'EMERGENCY', 'UNKNOWN'
+// 88 comprehensive vocabulary sign classes + UNKNOWN
+const EXPANDED_VOCAB_SIGNS: { id: string; label: string; category: string }[] = [
+  // Greetings & Courtesy
+  { id: 'HELLO', label: 'Hello', category: 'Greeting' },
+  { id: 'GOODBYE', label: 'Goodbye', category: 'Greeting' },
+  { id: 'WELCOME', label: 'Welcome', category: 'Courtesy' },
+  { id: 'THANK-YOU', label: 'Thank You', category: 'Courtesy' },
+  { id: 'PLEASE', label: 'Please', category: 'Courtesy' },
+  { id: 'SORRY', label: 'Sorry', category: 'Courtesy' },
+  // Affirmations & Pronouns
+  { id: 'YES', label: 'Yes', category: 'Affirmation' },
+  { id: 'NO', label: 'No', category: 'Affirmation' },
+  { id: 'I', label: 'I / Me', category: 'Pronoun' },
+  { id: 'YOU', label: 'You', category: 'Pronoun' },
+  { id: 'WE', label: 'We', category: 'Pronoun' },
+  { id: 'THEY', label: 'They', category: 'Pronoun' },
+  // Emergency & Medical
+  { id: 'HELP', label: 'Help', category: 'Emergency' },
+  { id: 'EMERGENCY', label: 'Emergency', category: 'Emergency' },
+  { id: 'DANGER', label: 'Danger', category: 'Emergency' },
+  { id: 'SAFE', label: 'Safe', category: 'Descriptor' },
+  { id: 'AMBULANCE', label: 'Ambulance', category: 'Emergency' },
+  { id: 'POLICE', label: 'Police', category: 'Emergency' },
+  { id: 'DOCTOR', label: 'Doctor', category: 'Medical' },
+  { id: 'NURSE', label: 'Nurse', category: 'Medical' },
+  { id: 'HOSPITAL', label: 'Hospital', category: 'Medical' },
+  { id: 'MEDICINE', label: 'Medicine', category: 'Medical' },
+  { id: 'PAIN', label: 'Pain', category: 'Medical' },
+  { id: 'FEVER', label: 'Fever', category: 'Medical' },
+  { id: 'SICK', label: 'Sick', category: 'Medical' },
+  // Essentials & Places
+  { id: 'WATER', label: 'Water', category: 'Essential' },
+  { id: 'FOOD', label: 'Food', category: 'Essential' },
+  { id: 'MONEY', label: 'Money', category: 'Essential' },
+  { id: 'HOME', label: 'Home', category: 'Places' },
+  { id: 'BATHROOM', label: 'Bathroom', category: 'Places' },
+  { id: 'SCHOOL', label: 'School', category: 'Places' },
+  { id: 'OFFICE', label: 'Office', category: 'Places' },
+  { id: 'STORE', label: 'Store', category: 'Places' },
+  { id: 'CAR', label: 'Car', category: 'Transport' },
+  { id: 'BUS', label: 'Bus', category: 'Transport' },
+  { id: 'TRAIN', label: 'Train', category: 'Transport' },
+  // Questions & Identity
+  { id: 'NAME', label: 'Name', category: 'Identity' },
+  { id: 'WHAT', label: 'What', category: 'Question' },
+  { id: 'WHERE', label: 'Where', category: 'Question' },
+  { id: 'WHEN', label: 'When', category: 'Question' },
+  { id: 'HOW', label: 'How', category: 'Question' },
+  { id: 'WHO', label: 'Who', category: 'Question' },
+  { id: 'WHY', label: 'Why', category: 'Question' },
+  // Descriptors
+  { id: 'GOOD', label: 'Good', category: 'Descriptor' },
+  { id: 'BAD', label: 'Bad', category: 'Descriptor' },
+  { id: 'BIG', label: 'Big', category: 'Descriptor' },
+  { id: 'SMALL', label: 'Small', category: 'Descriptor' },
+  { id: 'HOT', label: 'Hot', category: 'Descriptor' },
+  { id: 'COLD', label: 'Cold', category: 'Descriptor' },
+  { id: 'EASY', label: 'Easy', category: 'Descriptor' },
+  { id: 'DIFFICULT', label: 'Difficult', category: 'Descriptor' },
+  // Emotions & Desires
+  { id: 'HAPPY', label: 'Happy', category: 'Emotion' },
+  { id: 'SAD', label: 'Sad', category: 'Emotion' },
+  { id: 'ANGRY', label: 'Angry', category: 'Emotion' },
+  { id: 'SCARED', label: 'Scared', category: 'Emotion' },
+  { id: 'TIRED', label: 'Tired', category: 'Physical' },
+  { id: 'LOVE', label: 'Love', category: 'Emotion' },
+  { id: 'LIKE', label: 'Like', category: 'Emotion' },
+  { id: 'WANT', label: 'Want', category: 'Desire' },
+  { id: 'NEED', label: 'Need', category: 'Desire' },
+  { id: 'UNDERSTAND', label: 'Understand', category: 'Cognition' },
+  { id: 'KNOW', label: 'Know', category: 'Cognition' },
+  { id: 'THINK', label: 'Think', category: 'Cognition' },
+  { id: 'FEEL', label: 'Feel', category: 'Emotion' },
+  // Actions
+  { id: 'SEE', label: 'See', category: 'Action' },
+  { id: 'HEAR', label: 'Hear', category: 'Action' },
+  { id: 'SPEAK', label: 'Speak', category: 'Action' },
+  { id: 'CALL', label: 'Call', category: 'Action' },
+  { id: 'MEET', label: 'Meet', category: 'Action' },
+  { id: 'WORK', label: 'Work', category: 'Activity' },
+  { id: 'WALK', label: 'Walk', category: 'Action' },
+  { id: 'WAIT', label: 'Wait', category: 'Action' },
+  { id: 'STOP', label: 'Stop', category: 'Action' },
+  { id: 'GO', label: 'Go', category: 'Action' },
+  { id: 'COME', label: 'Come', category: 'Action' },
+  { id: 'START', label: 'Start', category: 'Action' },
+  { id: 'FINISH', label: 'Finish', category: 'Action' },
+  { id: 'AGAIN', label: 'Again', category: 'Action' },
+  // Social & Temporal
+  { id: 'FAMILY', label: 'Family', category: 'Social' },
+  { id: 'FRIEND', label: 'Friend', category: 'Social' },
+  { id: 'TIME', label: 'Time', category: 'Temporal' },
+  { id: 'NOW', label: 'Now', category: 'Temporal' },
+  { id: 'LATER', label: 'Later', category: 'Temporal' },
+  { id: 'TODAY', label: 'Today', category: 'Temporal' },
+  { id: 'TOMORROW', label: 'Tomorrow', category: 'Temporal' },
+  { id: 'YESTERDAY', label: 'Yesterday', category: 'Temporal' },
+  { id: 'MORNING', label: 'Morning', category: 'Temporal' },
+  { id: 'NIGHT', label: 'Night', category: 'Temporal' },
+];
+
+const VOCAB_SIGNS = [...EXPANDED_VOCAB_SIGNS.map(s => s.id), 'UNKNOWN'];
+
+const CATEGORIES = [
+  'All',
+  'Greeting',
+  'Courtesy',
+  'Pronoun',
+  'Emergency',
+  'Medical',
+  'Essential',
+  'Question',
+  'Descriptor',
+  'Emotion',
+  'Action',
+  'Places',
+  'Transport',
+  'Social',
+  'Temporal',
 ];
 
 // MediaPipe 21 Hand Landmark Bones Connections
@@ -87,6 +200,8 @@ export const CameraLandmarkView: React.FC = () => {
   const [handsCount, setHandsCount] = useState<number>(0);
   const [detectedGestureTag, setDetectedGestureTag] = useState<string>('SEARCHING...');
   const [poseLocked, setPoseLocked] = useState<boolean>(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Recognition state
   const [recognizedSign, setRecognizedSign] = useState<{
@@ -342,26 +457,41 @@ export const CameraLandmarkView: React.FC = () => {
     let conf = 0.85;
 
     if (openCount === 5) {
-      gesture = 'OPEN PALM (HELLO)';
+      gesture = 'OPEN PALM (HELLO/FIVE)';
       conf = 0.96;
     } else if (openCount === 1 && isThumbExt && landmarks[4].y < landmarks[3].y) {
       gesture = 'THUMBS UP (GOOD/YES)';
+      conf = 0.96;
+    } else if (openCount === 1 && isThumbExt && landmarks[4].y > landmarks[2].y + 0.04) {
+      gesture = 'THUMBS DOWN (BAD)';
       conf = 0.95;
-    } else if (openCount === 1 && isIndexExt) {
-      gesture = 'POINTING (YOU/WHAT)';
-      conf = 0.93;
-    } else if (openCount === 2 && isIndexExt && isMiddleExt) {
-      gesture = 'VICTORY / V SIGN (TWO)';
+    } else if (openCount === 1 && isIndexExt && landmarks[8].y > landmarks[0].y - 0.05) {
+      gesture = 'POINTING CHEST (I/ME)';
       conf = 0.94;
-    } else if (openCount === 3 && isThumbExt && isIndexExt && isMiddleExt) {
-      gesture = 'THREE / W SIGN';
-      conf = 0.91;
+    } else if (openCount === 1 && isIndexExt) {
+      gesture = 'POINTING (YOU)';
+      conf = 0.94;
+    } else if (openCount === 2 && isIndexExt && isMiddleExt) {
+      gesture = 'VICTORY / V SIGN (SEE/TWO)';
+      conf = 0.95;
+    } else if (openCount === 3 && isThumbExt && isIndexExt && isPinkyExt && !isMiddleExt && !isRingExt) {
+      gesture = 'ILY LOVE SIGN (LOVE)';
+      conf = 0.97;
+    } else if (openCount === 2 && isThumbExt && isPinkyExt && !isIndexExt && !isMiddleExt && !isRingExt) {
+      gesture = 'SHAKA / CALL SIGN (CALL)';
+      conf = 0.96;
+    } else if (openCount === 3 && isIndexExt && isMiddleExt && isRingExt) {
+      gesture = 'W SIGN (WATER/THREE)';
+      conf = 0.94;
+    } else if (openCount === 4 && !isThumbExt) {
+      gesture = 'FOUR (FOUR)';
+      conf = 0.93;
     } else if (openCount === 0) {
       gesture = 'FIST (SORRY)';
-      conf = 0.90;
+      conf = 0.91;
     } else if (distSq(landmarks[4], landmarks[8]) < 0.003) {
-      gesture = 'PINCH / OK SIGN';
-      conf = 0.92;
+      gesture = 'PINCH / OK SIGN (FOOD/SMALL)';
+      conf = 0.93;
     }
 
     return {
@@ -674,12 +804,33 @@ export const CameraLandmarkView: React.FC = () => {
                 candidateConf = 0.96;
               } else if (hState.gestureName.includes('GOOD')) {
                 candidateGloss = 'GOOD';
+                candidateConf = 0.96;
+              } else if (hState.gestureName.includes('BAD')) {
+                candidateGloss = 'BAD';
                 candidateConf = 0.95;
-              } else if (hState.gestureName.includes('POINTING')) {
+              } else if (hState.gestureName.includes('YOU')) {
                 candidateGloss = 'YOU';
+                candidateConf = 0.94;
+              } else if (hState.gestureName.includes('I/ME')) {
+                candidateGloss = 'I';
+                candidateConf = 0.94;
+              } else if (hState.gestureName.includes('LOVE')) {
+                candidateGloss = 'LOVE';
+                candidateConf = 0.97;
+              } else if (hState.gestureName.includes('CALL')) {
+                candidateGloss = 'CALL';
+                candidateConf = 0.96;
+              } else if (hState.gestureName.includes('WATER')) {
+                candidateGloss = 'WATER';
+                candidateConf = 0.94;
+              } else if (hState.gestureName.includes('FOOD')) {
+                candidateGloss = 'FOOD';
                 candidateConf = 0.93;
+              } else if (hState.gestureName.includes('SORRY')) {
+                candidateGloss = 'SORRY';
+                candidateConf = 0.92;
               } else if (hState.gestureName.includes('VICTORY')) {
-                candidateGloss = 'PEACE';
+                candidateGloss = 'SEE';
                 candidateConf = 0.94;
               }
             }
@@ -749,6 +900,16 @@ export const CameraLandmarkView: React.FC = () => {
       speakText(gloss);
     }
   };
+
+  // Filtered signs for the expanded vocabulary action simulator
+  const filteredSigns = EXPANDED_VOCAB_SIGNS.filter((s) => {
+    const matchesCategory = selectedCategory === 'All' || s.category === selectedCategory;
+    const matchesSearch =
+      searchQuery.trim() === '' ||
+      s.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.label.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   return (
     <div className="relative flex flex-col h-full w-full bg-slate-950 overflow-hidden select-none">
@@ -965,43 +1126,75 @@ export const CameraLandmarkView: React.FC = () => {
         </div>
       </div>
 
-      {/* Action Simulator & Instant Sign Translation Bar */}
-      <div className="flex flex-col bg-slate-900/95 border-t border-slate-800 px-4 py-2.5 z-10">
-        <div className="flex items-center justify-between mb-1.5">
+      {/* Expanded Sign Vocabulary Action Simulator & Translation Bar */}
+      <div className="flex flex-col bg-slate-900/95 border-t border-slate-800 px-4 py-2 z-10">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-bold">
-              Instant Sign Action Simulator &amp; Translation
+            <span className="text-[11px] font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+              <span>Expanded Sign Vocabulary ({filteredSigns.length} of {EXPANDED_VOCAB_SIGNS.length} Signs)</span>
             </span>
-            <span className="text-[10px] text-slate-400">(Click to test live recognition)</span>
           </div>
 
-          <button
-            type="button"
-            onClick={() => updateSettings({ fingerspellingMode: !settings.fingerspellingMode })}
-            className={`px-2.5 py-0.5 rounded text-[11px] font-medium transition-colors ${
-              settings.fingerspellingMode
-                ? 'bg-amber-600 text-white'
-                : 'bg-slate-800 text-slate-400 hover:text-white'
-            }`}
-          >
-            Fingerspelling: {settings.fingerspellingMode ? 'ON (A-Z)' : 'OFF (Signs)'}
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="h-3 w-3 absolute left-2 top-1.5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search 88 glosses..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-slate-950 border border-slate-700 rounded text-[10px] text-slate-200 pl-6 pr-2 py-0.5 focus:outline-none focus:border-cyan-500 w-36"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => updateSettings({ fingerspellingMode: !settings.fingerspellingMode })}
+              className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                settings.fingerspellingMode
+                  ? 'bg-amber-600 text-white'
+                  : 'bg-slate-800 text-slate-400 hover:text-white'
+              }`}
+            >
+              Fingerspelling: {settings.fingerspellingMode ? 'ON (A-Z)' : 'OFF (Signs)'}
+            </button>
+          </div>
         </div>
 
-        {/* Quick Test Action Buttons */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          {['HELLO', 'THANK-YOU', 'YES', 'NO', 'HELP', 'WATER', 'DOCTOR', 'PLEASE', 'SORRY', 'EMERGENCY'].map(
-            (sign) => (
-              <button
-                key={sign}
-                type="button"
-                onClick={() => simulateSignDetection(sign)}
-                className="px-2.5 py-1 rounded bg-slate-800/90 border border-slate-700/80 hover:border-cyan-500/60 hover:bg-slate-700 text-xs font-mono font-medium text-cyan-300 hover:text-white transition-all shadow-sm active:scale-95"
-              >
-                + {sign}
-              </button>
-            )
-          )}
+        {/* Category Filter Pills */}
+        <div className="flex items-center gap-1 overflow-x-auto pb-1 mb-1 scrollbar-thin">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-2 py-0.5 rounded text-[9px] font-mono whitespace-nowrap transition-all ${
+                selectedCategory === cat
+                  ? 'bg-cyan-600 text-white font-bold'
+                  : 'bg-slate-800/80 text-slate-400 hover:text-slate-200 hover:bg-slate-700'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Quick Test Action Buttons for Filtered Signs */}
+        <div className="flex flex-wrap items-center gap-1 max-h-20 overflow-y-auto pr-1">
+          {filteredSigns.map((sign) => (
+            <button
+              key={sign.id}
+              type="button"
+              onClick={() => simulateSignDetection(sign.id)}
+              className="px-2 py-0.5 rounded bg-slate-800/90 border border-slate-700/80 hover:border-cyan-500/60 hover:bg-slate-700 text-[10px] font-mono font-medium text-cyan-300 hover:text-white transition-all shadow-sm active:scale-95 flex items-center gap-1"
+              title={`${sign.label} (${sign.category})`}
+            >
+              <span className="text-cyan-500 font-bold">+</span>
+              <span>{sign.id}</span>
+            </button>
+          ))}
         </div>
       </div>
     </div>

@@ -126,6 +126,102 @@ export function getGlossClip(gloss: string): GlossClip {
       leftHand: rest.leftHand.map(h => [h[0] + 0.10, h[1] - 0.26, h[2]]),
       rightHand: rest.rightHand.map(h => [h[0] - 0.12, h[1] - 0.32, h[2]]),
     });
+  } else if (upper === "NO") {
+    // Index and middle snap to thumb repeatedly
+    keyframes.push({
+      timeOffset: 0.3,
+      pose: rest.pose.map((p, idx) => (idx === 6 ? [0.60, 0.38, 0.0] : p)),
+      leftHand: rest.leftHand,
+      rightHand: rest.rightHand.map(h => [h[0] - 0.04, h[1] - 0.32, h[2]]),
+    });
+    keyframes.push({
+      timeOffset: 0.6,
+      pose: rest.pose.map((p, idx) => (idx === 6 ? [0.60, 0.40, 0.0] : p)),
+      leftHand: rest.leftHand,
+      rightHand: rest.rightHand.map(h => [h[0] - 0.04, h[1] - 0.30, h[2]]),
+    });
+  } else if (upper === "PLEASE") {
+    // Flat hand circular motion over chest
+    keyframes.push({
+      timeOffset: 0.3,
+      pose: rest.pose.map((p, idx) => (idx === 6 ? [0.50, 0.42, 0.0] : p)),
+      leftHand: rest.leftHand,
+      rightHand: rest.rightHand.map(h => [h[0] - 0.14, h[1] - 0.28, h[2]]),
+    });
+    keyframes.push({
+      timeOffset: 0.7,
+      pose: rest.pose.map((p, idx) => (idx === 6 ? [0.54, 0.42, 0.0] : p)),
+      leftHand: rest.leftHand,
+      rightHand: rest.rightHand.map(h => [h[0] - 0.10, h[1] - 0.28, h[2]]),
+    });
+  } else if (upper === "SORRY") {
+    // Fist rubbing circular on chest
+    keyframes.push({
+      timeOffset: 0.3,
+      pose: rest.pose.map((p, idx) => (idx === 6 ? [0.50, 0.44, 0.0] : p)),
+      leftHand: rest.leftHand,
+      rightHand: rest.rightHand.map(h => [h[0] - 0.14, h[1] - 0.26, h[2]]),
+    });
+    keyframes.push({
+      timeOffset: 0.7,
+      pose: rest.pose.map((p, idx) => (idx === 6 ? [0.53, 0.44, 0.0] : p)),
+      leftHand: rest.leftHand,
+      rightHand: rest.rightHand.map(h => [h[0] - 0.11, h[1] - 0.26, h[2]]),
+    });
+  } else if (upper === "I" || upper === "ME") {
+    // Index finger points to chest
+    keyframes.push({
+      timeOffset: 0.5,
+      pose: rest.pose.map((p, idx) => (idx === 6 ? [0.50, 0.42, 0.0] : p)),
+      leftHand: rest.leftHand,
+      rightHand: rest.rightHand.map(h => [h[0] - 0.14, h[1] - 0.28, h[2]]),
+    });
+  } else if (upper === "YOU") {
+    // Index finger points forward
+    keyframes.push({
+      timeOffset: 0.5,
+      pose: rest.pose.map((p, idx) => (idx === 6 ? [0.60, 0.40, 0.0] : p)),
+      leftHand: rest.leftHand,
+      rightHand: rest.rightHand.map(h => [h[0] - 0.04, h[1] - 0.30, h[2]]),
+    });
+  } else if (upper === "LOVE") {
+    // Both arms crossed over chest
+    keyframes.push({
+      timeOffset: 0.5,
+      pose: rest.pose.map((p, idx) => {
+        if (idx === 5) return [0.58, 0.42, 0.0];
+        if (idx === 6) return [0.42, 0.42, 0.0];
+        return p;
+      }),
+      leftHand: rest.leftHand.map(h => [h[0] + 0.22, h[1] - 0.28, h[2]]),
+      rightHand: rest.rightHand.map(h => [h[0] - 0.22, h[1] - 0.28, h[2]]),
+    });
+  } else if (upper === "WATER") {
+    // W hand taps chin/mouth
+    keyframes.push({
+      timeOffset: 0.4,
+      pose: rest.pose.map((p, idx) => (idx === 6 ? [0.52, 0.28, 0.0] : p)),
+      leftHand: rest.leftHand,
+      rightHand: rest.rightHand.map(h => [h[0] - 0.12, h[1] - 0.42, h[2]]),
+    });
+    keyframes.push({
+      timeOffset: 0.7,
+      pose: rest.pose.map((p, idx) => (idx === 6 ? [0.52, 0.26, 0.0] : p)),
+      leftHand: rest.leftHand,
+      rightHand: rest.rightHand.map(h => [h[0] - 0.12, h[1] - 0.44, h[2]]),
+    });
+  } else if (upper === "STOP") {
+    // Right hand chops down flat onto left palm
+    keyframes.push({
+      timeOffset: 0.5,
+      pose: rest.pose.map((p, idx) => {
+        if (idx === 5) return [0.48, 0.52, 0.0];
+        if (idx === 6) return [0.48, 0.50, 0.0];
+        return p;
+      }),
+      leftHand: rest.leftHand.map(h => [h[0] + 0.12, h[1] - 0.18, h[2]]),
+      rightHand: rest.rightHand.map(h => [h[0] - 0.16, h[1] - 0.20, h[2]]),
+    });
   } else {
     // Generic smooth sign trajectory
     const charCode = upper.charCodeAt(0) || 65;

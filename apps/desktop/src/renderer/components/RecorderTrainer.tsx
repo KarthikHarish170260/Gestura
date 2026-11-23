@@ -17,12 +17,16 @@ export const RecorderTrainer: React.FC = () => {
   } | null>({ accuracy: 85.98, macroF1: 0.8426, loss: 0.2512 });
 
   const signsList = [
-    'HELLO', 'THANK-YOU', 'YES', 'NO', 'HELP', 'WATER', 'FOOD', 'DOCTOR',
-    'PLEASE', 'SORRY', 'NAME', 'WHAT', 'WHERE', 'WHEN', 'HOW', 'GOOD',
-    'BAD', 'HOME', 'HOSPITAL', 'MEDICINE', 'PAIN', 'FAMILY', 'FRIEND',
-    'WORK', 'TIME', 'TODAY', 'TOMORROW', 'YESTERDAY', 'WANT', 'NEED',
-    'LIKE', 'UNDERSTAND', 'AGAIN', 'STOP', 'GO', 'COME', 'MONEY', 'HAPPY',
-    'TIRED', 'EMERGENCY'
+    'HELLO', 'GOODBYE', 'WELCOME', 'THANK-YOU', 'PLEASE', 'SORRY', 'YES', 'NO',
+    'I', 'YOU', 'WE', 'THEY', 'HELP', 'EMERGENCY', 'DANGER', 'SAFE', 'AMBULANCE',
+    'POLICE', 'WATER', 'FOOD', 'MONEY', 'DOCTOR', 'NURSE', 'HOSPITAL', 'MEDICINE',
+    'PAIN', 'FEVER', 'SICK', 'NAME', 'WHAT', 'WHERE', 'WHEN', 'HOW', 'WHO', 'WHY',
+    'GOOD', 'BAD', 'BIG', 'SMALL', 'HOT', 'COLD', 'EASY', 'DIFFICULT', 'HAPPY',
+    'SAD', 'ANGRY', 'SCARED', 'TIRED', 'LOVE', 'LIKE', 'WANT', 'NEED', 'UNDERSTAND',
+    'KNOW', 'THINK', 'FEEL', 'SEE', 'HEAR', 'SPEAK', 'CALL', 'MEET', 'WORK', 'WALK',
+    'WAIT', 'STOP', 'GO', 'COME', 'START', 'FINISH', 'AGAIN', 'HOME', 'BATHROOM',
+    'SCHOOL', 'OFFICE', 'STORE', 'CAR', 'BUS', 'TRAIN', 'FAMILY', 'FRIEND', 'TIME',
+    'NOW', 'LATER', 'TODAY', 'TOMORROW', 'YESTERDAY', 'MORNING', 'NIGHT'
   ];
 
   const handleStartCapture = () => {
