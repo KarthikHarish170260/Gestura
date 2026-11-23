@@ -9,7 +9,23 @@ import { SidecarSupervisor } from './sidecarSupervisor';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const { app, BrowserWindow, ipcMain, session } = electron;
+const { app, BrowserWindow, ipcMain, session, protocol } = electron;
+
+// Allow file: protocol to fetch local WASM binaries and model files offline without CORS blocks
+if (protocol && protocol.registerSchemesAsPrivileged) {
+  protocol.registerSchemesAsPrivileged([
+    {
+      scheme: 'file',
+      privileges: {
+        standard: true,
+        secure: true,
+        allowServiceWorkers: true,
+        supportFetchAPI: true,
+        corsEnabled: true,
+      },
+    },
+  ]);
+}
 
 // Process security flags
 const sidecarToken = crypto.randomBytes(32).toString('hex');
@@ -35,25 +51,27 @@ function createWindow(): void {
       preload: fs.existsSync(path.join(__dirname, '../preload/index.cjs'))
         ? path.join(__dirname, '../preload/index.cjs')
         : path.join(__dirname, '../preload/index.js'),
-      sandbox: true,
+      sandbox: false,
       contextIsolation: true,
       nodeIntegration: false,
+      webSecurity: false, // Ensures local offline file:// fetches of wasm and task models succeed
     },
     title: 'GESTURA - Offline Sign Language Assistant',
     autoHideMenuBar: true,
   });
 
-  // Strict CSP
+  // Strict CSP allowing local wasm evaluation and offline models
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
-          "default-src 'self' 'unsafe-inline' blob: data:; " +
-          "connect-src 'self' ws://127.0.0.1:* http://127.0.0.1:*; " +
-          "img-src 'self' data: blob:; " +
-          "media-src 'self' blob: mediastream:; " +
-          "worker-src 'self' blob:;"
+          "default-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data: file:; " +
+          "connect-src 'self' ws://127.0.0.1:* http://127.0.0.1:* file: https://cdn.jsdelivr.net https://storage.googleapis.com blob: data:; " +
+          "img-src 'self' data: blob: file:; " +
+          "media-src 'self' blob: mediastream: file:; " +
+          "worker-src 'self' blob: file:; " +
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: file: https://cdn.jsdelivr.net;"
         ],
       },
     });
