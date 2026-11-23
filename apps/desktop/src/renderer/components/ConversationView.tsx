@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Camera, Volume2, Mic, Trash2, CheckCircle2, Send } from 'lucide-react';
+import { Camera, Volume2, Mic, Trash2, CheckCircle2, Send, Maximize2, Minimize2 } from 'lucide-react';
 import { CameraLandmarkView } from './CameraLandmarkView';
 import { AvatarCanvas } from '../avatar/AvatarCanvas';
 import { useConversationStore } from '../store/conversationStore';
@@ -18,6 +18,7 @@ export const ConversationView: React.FC = () => {
   } = useConversationStore();
 
   const [inputSpeechText, setInputSpeechText] = useState('');
+  const [isMaximized, setIsMaximized] = useState(false);
 
   // Signer confirms recognized caption and triggers speech
   const handleConfirmAndSpeak = async () => {
@@ -115,19 +116,32 @@ export const ConversationView: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full w-full gap-4">
-      {/* Top Split-Screen Views */}
-      <div className="grid grid-cols-2 gap-4 h-[55%] min-h-[340px]">
+    <div className="flex flex-col h-full w-full gap-3">
+      {/* Top Split-Screen Views - Expanded Viewports */}
+      <div className={`grid grid-cols-2 gap-3 transition-all duration-300 ${
+        isMaximized ? 'flex-1 min-h-[580px]' : 'h-[74%] min-h-[460px]'
+      }`}>
         {/* Left: Signer Viewport */}
         <div className="flex flex-col rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-xl">
           <div className="flex items-center justify-between border-b border-slate-800 px-4 py-2 bg-slate-900/80">
             <div className="flex items-center gap-2">
-              <Camera className="h-4 w-4 text-indigo-400" />
+              <Camera className="h-4 w-4 text-cyan-400" />
               <span className="text-sm font-semibold text-slate-200">
                 Signer Camera (Sign &rarr; Speech)
               </span>
             </div>
-            <span className="text-xs text-indigo-400 font-mono font-medium">30 FPS</span>
+            <div className="flex items-center gap-2.5">
+              <span className="text-xs text-cyan-400 font-mono font-medium">30 FPS Live</span>
+              <button
+                type="button"
+                onClick={() => setIsMaximized(!isMaximized)}
+                className="flex items-center gap-1 text-[11px] font-mono text-slate-300 hover:text-white px-2 py-0.5 rounded bg-slate-800/80 hover:bg-slate-700 border border-slate-700 transition-colors"
+                title={isMaximized ? "Restore standard size" : "Expand screen to maximum size"}
+              >
+                {isMaximized ? <Minimize2 className="h-3 w-3 text-cyan-400" /> : <Maximize2 className="h-3 w-3 text-cyan-400" />}
+                <span>{isMaximized ? 'Compact' : 'Expand Screen'}</span>
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-hidden">
@@ -135,9 +149,9 @@ export const ConversationView: React.FC = () => {
           </div>
 
           {/* Signer Editable Caption Builder Bar */}
-          <div className="p-3 border-t border-slate-800 bg-slate-900/80">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          <div className="p-2.5 border-t border-slate-800 bg-slate-900/80">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                 Pending Signer Caption
               </span>
               <div className="flex items-center gap-2">
@@ -159,13 +173,13 @@ export const ConversationView: React.FC = () => {
                 value={pendingCaption}
                 onChange={(e) => setPendingCaption(e.target.value)}
                 placeholder="Signing gesture will accumulate here... (Editable)"
-                className="flex-1 rounded-lg bg-slate-950 border border-slate-800 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 font-medium"
+                className="flex-1 rounded-lg bg-slate-950 border border-slate-800 px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 font-medium"
               />
               <button
                 type="button"
                 onClick={handleConfirmAndSpeak}
                 disabled={!pendingCaption.trim()}
-                className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-500 disabled:opacity-40 transition-colors shadow-lg shadow-indigo-600/20"
+                className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-indigo-500 disabled:opacity-40 transition-colors shadow-lg shadow-indigo-600/20"
               >
                 <Volume2 className="h-3.5 w-3.5" /> Speak
               </button>
@@ -182,7 +196,18 @@ export const ConversationView: React.FC = () => {
                 Avatar Signer (Speech &rarr; Sign)
               </span>
             </div>
-            <span className="text-xs text-emerald-400 font-mono font-medium">60 FPS Decoupled</span>
+            <div className="flex items-center gap-2.5">
+              <span className="text-xs text-emerald-400 font-mono font-medium">60 FPS Decoupled</span>
+              <button
+                type="button"
+                onClick={() => setIsMaximized(!isMaximized)}
+                className="flex items-center gap-1 text-[11px] font-mono text-slate-300 hover:text-white px-2 py-0.5 rounded bg-slate-800/80 hover:bg-slate-700 border border-slate-700 transition-colors"
+                title={isMaximized ? "Restore standard size" : "Expand screen to maximum size"}
+              >
+                {isMaximized ? <Minimize2 className="h-3 w-3 text-emerald-400" /> : <Maximize2 className="h-3 w-3 text-emerald-400" />}
+                <span>{isMaximized ? 'Compact' : 'Expand Screen'}</span>
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-hidden">
@@ -190,9 +215,9 @@ export const ConversationView: React.FC = () => {
           </div>
 
           {/* Hearing Partner Input / Mic Bar */}
-          <div className="p-3 border-t border-slate-800 bg-slate-900/80">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          <div className="p-2.5 border-t border-slate-800 bg-slate-900/80">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                 Hearing Partner Microphone
               </span>
               <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
@@ -209,12 +234,12 @@ export const ConversationView: React.FC = () => {
                 value={inputSpeechText}
                 onChange={(e) => setInputSpeechText(e.target.value)}
                 placeholder="Speak or type English here to animate avatar..."
-                className="flex-1 rounded-lg bg-slate-950 border border-slate-800 px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 font-medium"
+                className="flex-1 rounded-lg bg-slate-950 border border-slate-800 px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 font-medium"
               />
               <button
                 type="submit"
                 disabled={!inputSpeechText.trim()}
-                className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-500 disabled:opacity-40 transition-colors shadow-lg shadow-emerald-600/20"
+                className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-emerald-500 disabled:opacity-40 transition-colors shadow-lg shadow-emerald-600/20"
               >
                 <Send className="h-3.5 w-3.5" /> Sign
               </button>
@@ -224,7 +249,9 @@ export const ConversationView: React.FC = () => {
       </div>
 
       {/* Bottom: Shared Scrolling Conversation Transcript */}
-      <div className="flex-1 flex flex-col rounded-xl border border-slate-800 bg-slate-900/50 overflow-hidden shadow-lg min-h-[160px]">
+      <div className={`flex flex-col rounded-xl border border-slate-800 bg-slate-900/50 overflow-hidden shadow-lg transition-all duration-300 ${
+        isMaximized ? 'h-[14%] min-h-[90px]' : 'h-[26%] min-h-[140px]'
+      }`}>
         <div className="flex items-center justify-between border-b border-slate-800 px-4 py-2 bg-slate-900/80">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
             Shared Conversation History &amp; Session Transcript

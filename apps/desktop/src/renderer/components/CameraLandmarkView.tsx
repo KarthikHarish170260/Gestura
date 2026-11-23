@@ -13,6 +13,8 @@ import {
   Cpu,
   Hand,
   Search,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { FilesetResolver, HandLandmarker, PoseLandmarker } from '@mediapipe/tasks-vision';
 import { useConversationStore } from '../store/conversationStore';
@@ -202,6 +204,7 @@ export const CameraLandmarkView: React.FC = () => {
   const [poseLocked, setPoseLocked] = useState<boolean>(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isSimulatorExpanded, setIsSimulatorExpanded] = useState<boolean>(true);
 
   // Recognition state
   const [recognizedSign, setRecognizedSign] = useState<{
@@ -1012,9 +1015,9 @@ export const CameraLandmarkView: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Camera Viewport */}
-      <div className="relative flex-1 flex items-center justify-center p-3 bg-slate-950">
-        <div className="relative w-full h-full max-w-[640px] max-h-[480px] rounded-xl overflow-hidden border border-slate-800 bg-black shadow-2xl flex items-center justify-center">
+      {/* Main Camera Viewport - Expanded Full View */}
+      <div className="relative flex-1 flex items-center justify-center p-1 bg-slate-950 overflow-hidden">
+        <div className="relative w-full h-full rounded-xl overflow-hidden border border-slate-800 bg-black shadow-2xl flex items-center justify-center">
           {/* Real Webcam Video Feed */}
           <video
             ref={videoRef}
@@ -1127,13 +1130,18 @@ export const CameraLandmarkView: React.FC = () => {
       </div>
 
       {/* Expanded Sign Vocabulary Action Simulator & Translation Bar */}
-      <div className="flex flex-col bg-slate-900/95 border-t border-slate-800 px-4 py-2 z-10">
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+      <div className="flex flex-col bg-slate-900/95 border-t border-slate-800 px-4 py-1.5 z-10">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setIsSimulatorExpanded(!isSimulatorExpanded)}
+              className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider text-slate-300 font-bold hover:text-cyan-300 transition-colors"
+            >
               <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
-              <span>Expanded Sign Vocabulary ({filteredSigns.length} of {EXPANDED_VOCAB_SIGNS.length} Signs)</span>
-            </span>
+              <span>Sign Vocabulary &amp; Actions ({filteredSigns.length} / {EXPANDED_VOCAB_SIGNS.length})</span>
+              {isSimulatorExpanded ? <ChevronDown className="h-3.5 w-3.5 text-slate-400" /> : <ChevronUp className="h-3.5 w-3.5 text-cyan-400" />}
+            </button>
           </div>
 
           <div className="flex items-center gap-2">
@@ -1163,39 +1171,44 @@ export const CameraLandmarkView: React.FC = () => {
           </div>
         </div>
 
-        {/* Category Filter Pills */}
-        <div className="flex items-center gap-1 overflow-x-auto pb-1 mb-1 scrollbar-thin">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-2 py-0.5 rounded text-[9px] font-mono whitespace-nowrap transition-all ${
-                selectedCategory === cat
-                  ? 'bg-cyan-600 text-white font-bold'
-                  : 'bg-slate-800/80 text-slate-400 hover:text-slate-200 hover:bg-slate-700'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
+        {/* Collapsible Category & Buttons Panel */}
+        {isSimulatorExpanded && (
+          <div className="mt-1.5 pt-1 border-t border-slate-800/80">
+            {/* Category Filter Pills */}
+            <div className="flex items-center gap-1 overflow-x-auto pb-1 mb-1 scrollbar-thin">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-2 py-0.5 rounded text-[10px] font-mono whitespace-nowrap transition-all ${
+                    selectedCategory === cat
+                      ? 'bg-cyan-400 text-slate-950 font-extrabold shadow-sm'
+                      : 'bg-slate-800/80 text-slate-300 hover:text-white hover:bg-slate-700'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
 
-        {/* Quick Test Action Buttons for Filtered Signs */}
-        <div className="flex flex-wrap items-center gap-1 max-h-20 overflow-y-auto pr-1">
-          {filteredSigns.map((sign) => (
-            <button
-              key={sign.id}
-              type="button"
-              onClick={() => simulateSignDetection(sign.id)}
-              className="px-2 py-0.5 rounded bg-slate-800/90 border border-slate-700/80 hover:border-cyan-500/60 hover:bg-slate-700 text-[10px] font-mono font-medium text-cyan-300 hover:text-white transition-all shadow-sm active:scale-95 flex items-center gap-1"
-              title={`${sign.label} (${sign.category})`}
-            >
-              <span className="text-cyan-500 font-bold">+</span>
-              <span>{sign.id}</span>
-            </button>
-          ))}
-        </div>
+            {/* Quick Test Action Buttons for Filtered Signs */}
+            <div className="flex flex-wrap items-center gap-1 max-h-20 overflow-y-auto pr-1">
+              {filteredSigns.map((sign) => (
+                <button
+                  key={sign.id}
+                  type="button"
+                  onClick={() => simulateSignDetection(sign.id)}
+                  className="px-2 py-0.5 rounded bg-slate-800/90 border border-slate-700/80 hover:border-cyan-500/60 hover:bg-slate-700 text-[10px] font-mono font-medium text-cyan-300 hover:text-white transition-all shadow-sm active:scale-95 flex items-center gap-1"
+                  title={`${sign.label} (${sign.category})`}
+                >
+                  <span className="text-cyan-500 font-bold">+</span>
+                  <span>{sign.id}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

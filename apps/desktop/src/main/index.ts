@@ -42,8 +42,8 @@ let mainWindow: BrowserWindowType | null = null;
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
-    width: 1360,
-    height: 840,
+    width: 1480,
+    height: 940,
     minWidth: 1280,
     minHeight: 720,
     backgroundColor: '#020617',
@@ -59,6 +59,9 @@ function createWindow(): void {
     title: 'GESTURA - Offline Sign Language Assistant',
     autoHideMenuBar: true,
   });
+
+  // Maximize window by default for expansive viewports
+  mainWindow.maximize();
 
   // Strict CSP allowing local wasm evaluation and offline models
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {

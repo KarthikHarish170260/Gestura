@@ -6,7 +6,7 @@ import s from "node:path";
 import d from "node:fs";
 import H from "node:crypto";
 import { fileURLToPath as w } from "node:url";
-import { spawn as m } from "node:child_process";
+import { spawn as g } from "node:child_process";
 import j from "node:http";
 const T = w(import.meta.url), P = s.dirname(T);
 class $ {
@@ -43,7 +43,7 @@ class $ {
     return t ? "python" : "python3";
   }
   async start() {
-    var a, g;
+    var a, m;
     if (await this.checkHealth())
       return console.log(`[Supervisor] Sidecar is already running and healthy at ${this.config.host}:${this.config.port}`), !0;
     const t = this.resolveRepoRoot(), i = this.resolvePythonExe(t), c = {
@@ -54,7 +54,7 @@ class $ {
     };
     console.log(`[Supervisor] Spawning Python sidecar using "${i}" in "${t}"...`);
     try {
-      return this.process = m(
+      return this.process = g(
         i,
         ["-m", "uvicorn", "gestura_sidecar.main:app", "--host", this.config.host, "--port", String(this.config.port)],
         {
@@ -64,7 +64,7 @@ class $ {
         }
       ), (a = this.process.stdout) == null || a.on("data", (r) => {
         console.log(`[Sidecar] ${r.toString().trim()}`);
-      }), (g = this.process.stderr) == null || g.on("data", (r) => {
+      }), (m = this.process.stderr) == null || m.on("data", (r) => {
         console.error(`[Sidecar:stderr] ${r.toString().trim()}`);
       }), this.process.on("exit", (r, R) => {
         this.isShuttingDown || console.warn(`[Supervisor] Sidecar exited unexpectedly with code ${r}, signal ${R}`), this.process = null;
@@ -100,7 +100,7 @@ class $ {
     if (this.process) {
       if (this.isShuttingDown = !0, console.log("[Supervisor] Gracefully terminating Python sidecar..."), process.platform === "win32")
         try {
-          m("taskkill", ["/pid", String(this.process.pid), "/f", "/t"]);
+          g("taskkill", ["/pid", String(this.process.pid), "/f", "/t"]);
         } catch {
           this.process.kill();
         }
@@ -133,8 +133,8 @@ const v = H.randomBytes(32).toString("hex"), x = 8e3, b = "127.0.0.1", u = new $
 let n = null;
 function S() {
   if (n = new y({
-    width: 1360,
-    height: 840,
+    width: 1480,
+    height: 940,
     minWidth: 1280,
     minHeight: 720,
     backgroundColor: "#020617",
@@ -148,7 +148,7 @@ function S() {
     },
     title: "GESTURA - Offline Sign Language Assistant",
     autoHideMenuBar: !0
-  }), U.defaultSession.webRequest.onHeadersReceived((o, e) => {
+  }), n.maximize(), U.defaultSession.webRequest.onHeadersReceived((o, e) => {
     e({
       responseHeaders: {
         ...o.responseHeaders,

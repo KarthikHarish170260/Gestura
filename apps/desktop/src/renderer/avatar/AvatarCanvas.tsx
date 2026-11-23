@@ -18,8 +18,8 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({ glossSequence = [], 
   useEffect(() => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
-    canvas.width = 640;
-    canvas.height = 480;
+    canvas.width = 800;
+    canvas.height = 600;
 
     const engine = new AvatarEngine(canvas);
     engine.onGlossProgress((gloss) => {
@@ -71,11 +71,11 @@ export const AvatarCanvas: React.FC<AvatarCanvasProps> = ({ glossSequence = [], 
 
   return (
     <div className="relative flex flex-col h-full w-full bg-slate-950 overflow-hidden">
-      {/* 60 fps decoupled Canvas viewport */}
-      <div className="relative flex-1 flex items-center justify-center p-2">
+      {/* 60 fps decoupled Canvas viewport - Expanded View */}
+      <div className="relative flex-1 flex items-center justify-center p-1 overflow-hidden">
         <canvas
           ref={canvasRef}
-          className="w-full h-full max-w-[640px] max-h-[480px] object-contain rounded-lg border border-slate-800 shadow-2xl"
+          className="w-full h-full object-contain rounded-xl border border-slate-800 bg-black shadow-2xl"
         />
 
         {/* Gloss subtitle overlay banner */}
