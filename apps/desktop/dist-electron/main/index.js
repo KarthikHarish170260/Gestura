@@ -1,66 +1,73 @@
-var R = Object.defineProperty;
-var k = (i, e, t) => e in i ? R(i, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : i[e] = t;
-var h = (i, e, t) => k(i, typeof e != "symbol" ? e + "" : e, t);
-import { ipcMain as x, app as l, BrowserWindow as w, session as E } from "electron";
+var _ = Object.defineProperty;
+var k = (s, e, t) => e in s ? _(s, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : s[e] = t;
+var p = (s, e, t) => k(s, typeof e != "symbol" ? e + "" : e, t);
+import E from "electron";
 import o from "node:path";
+import h from "node:fs";
 import H from "node:crypto";
-import { spawn as f } from "node:child_process";
-import p from "node:fs";
-import _ from "node:http";
-class b {
+import { fileURLToPath as w } from "node:url";
+import { spawn as m } from "node:child_process";
+import T from "node:http";
+const b = w(import.meta.url), j = o.dirname(b);
+class $ {
   constructor(e) {
-    h(this, "process", null);
-    h(this, "config");
-    h(this, "isShuttingDown", !1);
+    p(this, "process", null);
+    p(this, "config");
+    p(this, "isShuttingDown", !1);
     this.config = e;
   }
   resolveRepoRoot() {
-    const e = process.cwd();
-    if (p.existsSync(o.join(e, "services", "sidecar")))
-      return e;
-    const t = o.resolve(e, "..");
-    if (p.existsSync(o.join(t, "services", "sidecar")))
-      return t;
-    const s = o.resolve(__dirname, "../../..");
-    return p.existsSync(o.join(s, "services", "sidecar")) ? s : e;
+    let e = process.cwd();
+    for (let t = 0; t < 5; t++) {
+      if (h.existsSync(o.join(e, "services", "sidecar")))
+        return e;
+      e = o.resolve(e, "..");
+    }
+    e = j;
+    for (let t = 0; t < 6; t++) {
+      if (h.existsSync(o.join(e, "services", "sidecar")))
+        return e;
+      e = o.resolve(e, "..");
+    }
+    return process.cwd();
   }
   resolvePythonExe(e) {
-    const t = process.platform === "win32", s = t ? o.join(".venv", "Scripts", "python.exe") : o.join(".venv", "bin", "python"), n = [
-      o.join(e, s),
-      o.join(process.cwd(), s),
-      o.resolve(e, "..", s)
+    const t = process.platform === "win32", i = t ? o.join(".venv", "Scripts", "python.exe") : o.join(".venv", "bin", "python"), c = [
+      o.join(e, i),
+      o.join(process.cwd(), i),
+      o.resolve(e, "..", i)
     ];
-    for (const c of n)
-      if (p.existsSync(c))
-        return c;
+    for (const a of c)
+      if (h.existsSync(a))
+        return a;
     return t ? "python" : "python3";
   }
   async start() {
-    var c, u;
+    var a, f;
     if (await this.checkHealth())
       return console.log(`[Supervisor] Sidecar is already running and healthy at ${this.config.host}:${this.config.port}`), !0;
-    const t = this.resolveRepoRoot(), s = this.resolvePythonExe(t), n = {
+    const t = this.resolveRepoRoot(), i = this.resolvePythonExe(t), c = {
       ...process.env,
       GESTURA_HOST: this.config.host,
       GESTURA_PORT: String(this.config.port),
       GESTURA_AUTH_TOKEN: this.config.token
     };
-    console.log(`[Supervisor] Spawning Python sidecar using "${s}" in "${t}"...`);
+    console.log(`[Supervisor] Spawning Python sidecar using "${i}" in "${t}"...`);
     try {
-      return this.process = f(
-        s,
+      return this.process = m(
+        i,
         ["-m", "uvicorn", "gestura_sidecar.main:app", "--host", this.config.host, "--port", String(this.config.port)],
         {
-          env: n,
+          env: c,
           stdio: ["ignore", "pipe", "pipe"],
           cwd: t
         }
-      ), (c = this.process.stdout) == null || c.on("data", (r) => {
+      ), (a = this.process.stdout) == null || a.on("data", (r) => {
         console.log(`[Sidecar] ${r.toString().trim()}`);
-      }), (u = this.process.stderr) == null || u.on("data", (r) => {
+      }), (f = this.process.stderr) == null || f.on("data", (r) => {
         console.error(`[Sidecar:stderr] ${r.toString().trim()}`);
-      }), this.process.on("exit", (r, v) => {
-        this.isShuttingDown || console.warn(`[Supervisor] Sidecar exited unexpectedly with code ${r}, signal ${v}`), this.process = null;
+      }), this.process.on("exit", (r, R) => {
+        this.isShuttingDown || console.warn(`[Supervisor] Sidecar exited unexpectedly with code ${r}, signal ${R}`), this.process = null;
       }), await this.waitForHealthCheck(15e3);
     } catch (r) {
       return console.error("[Supervisor] Failed to spawn sidecar:", r), !1;
@@ -71,17 +78,17 @@ class b {
     for (; Date.now() - t < e; ) {
       if (await this.checkHealth())
         return console.log("[Supervisor] Sidecar is healthy and accepting connections."), !0;
-      await new Promise((n) => setTimeout(n, 400));
+      await new Promise((c) => setTimeout(c, 400));
     }
     return console.warn("[Supervisor] Sidecar health check timed out."), !1;
   }
   checkHealth() {
     return new Promise((e) => {
-      const t = _.get(
+      const t = T.get(
         `http://${this.config.host}:${this.config.port}/health`,
         { timeout: 800 },
-        (s) => {
-          e(s.statusCode === 200);
+        (i) => {
+          e(i.statusCode === 200);
         }
       );
       t.on("error", () => e(!1)), t.on("timeout", () => {
@@ -93,7 +100,7 @@ class b {
     if (this.process) {
       if (this.isShuttingDown = !0, console.log("[Supervisor] Gracefully terminating Python sidecar..."), process.platform === "win32")
         try {
-          f("taskkill", ["/pid", String(this.process.pid), "/f", "/t"]);
+          m("taskkill", ["/pid", String(this.process.pid), "/f", "/t"]);
         } catch {
           this.process.kill();
         }
@@ -105,56 +112,62 @@ class b {
     }
   }
 }
-const m = H.randomBytes(32).toString("hex"), S = 8e3, y = "127.0.0.1", d = new b({
-  host: y,
-  port: S,
-  token: m
+const P = w(import.meta.url), l = o.dirname(P), { app: d, BrowserWindow: S, ipcMain: U, session: I } = E, y = H.randomBytes(32).toString("hex"), v = 8e3, x = "127.0.0.1", u = new $({
+  host: x,
+  port: v,
+  token: y
 });
-let a = null;
+let n = null;
 function g() {
-  a = new w({
+  if (n = new S({
     width: 1360,
     height: 840,
     minWidth: 1280,
     minHeight: 720,
     backgroundColor: "#020617",
     webPreferences: {
-      preload: o.join(__dirname, "../preload/index.js"),
+      preload: h.existsSync(o.join(l, "../preload/index.cjs")) ? o.join(l, "../preload/index.cjs") : o.join(l, "../preload/index.js"),
       sandbox: !0,
       contextIsolation: !0,
       nodeIntegration: !1
     },
     title: "GESTURA - Offline Sign Language Assistant",
     autoHideMenuBar: !0
-  }), E.defaultSession.webRequest.onHeadersReceived((i, e) => {
+  }), I.defaultSession.webRequest.onHeadersReceived((s, e) => {
     e({
       responseHeaders: {
-        ...i.responseHeaders,
+        ...s.responseHeaders,
         "Content-Security-Policy": [
           "default-src 'self' 'unsafe-inline' blob: data:; connect-src 'self' ws://127.0.0.1:* http://127.0.0.1:*; img-src 'self' data: blob:; media-src 'self' blob: mediastream:; worker-src 'self' blob:;"
         ]
       }
     });
-  }), process.env.VITE_DEV_SERVER_URL ? a.loadURL(process.env.VITE_DEV_SERVER_URL) : a.loadFile(o.join(__dirname, "../renderer/index.html")), a.on("closed", () => {
-    a = null;
+  }), process.env.VITE_DEV_SERVER_URL)
+    n.loadURL(process.env.VITE_DEV_SERVER_URL);
+  else {
+    const s = o.join(l, "../../dist/index.html");
+    h.existsSync(s) ? n.loadFile(s) : n.loadFile(o.join(l, "../renderer/index.html"));
+  }
+  n.on("closed", () => {
+    n = null;
   });
 }
-x.handle("app:get-sidecar-config", () => ({
-  port: S,
-  token: m,
-  host: y
+U.handle("app:get-sidecar-config", () => ({
+  port: v,
+  token: y,
+  host: x
 }));
-l.whenReady().then(async () => {
-  await d.start(), g(), l.on("activate", () => {
-    w.getAllWindows().length === 0 && g();
+d.whenReady().then(async () => {
+  await u.start(), g(), d.on("activate", () => {
+    S.getAllWindows().length === 0 && g();
   });
 });
-l.on("before-quit", () => {
-  d.stop();
+d.on("before-quit", () => {
+  u.stop();
 });
 process.on("exit", () => {
-  d.stop();
+  u.stop();
 });
-l.on("window-all-closed", () => {
-  process.platform !== "darwin" && l.quit();
+d.on("window-all-closed", () => {
+  process.platform !== "darwin" && d.quit();
 });

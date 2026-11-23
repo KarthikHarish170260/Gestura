@@ -1,5 +1,5 @@
-import { contextBridge as e, ipcRenderer as i } from "electron";
-const r = {
+import e from "electron";
+const { contextBridge: r, ipcRenderer: i } = e, o = {
   getSidecarConfig: () => i.invoke("app:get-sidecar-config")
 };
-e.exposeInMainWorld("gesturaBridge", r);
+r.exposeInMainWorld("gesturaBridge", o);

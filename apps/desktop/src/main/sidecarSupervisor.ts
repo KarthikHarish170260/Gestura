@@ -7,6 +7,10 @@ import { ChildProcess, spawn } from 'node:child_process';
 import path from 'node:path';
 import fs from 'node:fs';
 import http from 'node:http';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export interface SidecarConfig {
   host: string;
@@ -24,19 +28,21 @@ export class SidecarSupervisor {
   }
 
   private resolveRepoRoot(): string {
-    const cwd = process.cwd();
-    if (fs.existsSync(path.join(cwd, 'services', 'sidecar'))) {
-      return cwd;
+    let curr = process.cwd();
+    for (let i = 0; i < 5; i++) {
+      if (fs.existsSync(path.join(curr, 'services', 'sidecar'))) {
+        return curr;
+      }
+      curr = path.resolve(curr, '..');
     }
-    const upOne = path.resolve(cwd, '..');
-    if (fs.existsSync(path.join(upOne, 'services', 'sidecar'))) {
-      return upOne;
+    curr = __dirname;
+    for (let i = 0; i < 6; i++) {
+      if (fs.existsSync(path.join(curr, 'services', 'sidecar'))) {
+        return curr;
+      }
+      curr = path.resolve(curr, '..');
     }
-    const fromDirname = path.resolve(__dirname, '../../..');
-    if (fs.existsSync(path.join(fromDirname, 'services', 'sidecar'))) {
-      return fromDirname;
-    }
-    return cwd;
+    return process.cwd();
   }
 
   private resolvePythonExe(repoRoot: string): string {

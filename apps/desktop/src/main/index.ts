@@ -1,7 +1,15 @@
-import { app, BrowserWindow, ipcMain, session } from 'electron';
+import electron from 'electron';
+import type { BrowserWindow as BrowserWindowType } from 'electron';
 import path from 'node:path';
+import fs from 'node:fs';
 import crypto from 'node:crypto';
+import { fileURLToPath } from 'node:url';
 import { SidecarSupervisor } from './sidecarSupervisor';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const { app, BrowserWindow, ipcMain, session } = electron;
 
 // Process security flags
 const sidecarToken = crypto.randomBytes(32).toString('hex');
@@ -14,7 +22,7 @@ const supervisor = new SidecarSupervisor({
   token: sidecarToken,
 });
 
-let mainWindow: BrowserWindow | null = null;
+let mainWindow: BrowserWindowType | null = null;
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -24,7 +32,9 @@ function createWindow(): void {
     minHeight: 720,
     backgroundColor: '#020617',
     webPreferences: {
-      preload: path.join(__dirname, '../preload/index.js'),
+      preload: fs.existsSync(path.join(__dirname, '../preload/index.cjs'))
+        ? path.join(__dirname, '../preload/index.cjs')
+        : path.join(__dirname, '../preload/index.js'),
       sandbox: true,
       contextIsolation: true,
       nodeIntegration: false,
@@ -52,7 +62,12 @@ function createWindow(): void {
   if (process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+    const distIndex = path.join(__dirname, '../../dist/index.html');
+    if (fs.existsSync(distIndex)) {
+      mainWindow.loadFile(distIndex);
+    } else {
+      mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+    }
   }
 
   mainWindow.on('closed', () => {

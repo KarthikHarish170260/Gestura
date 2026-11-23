@@ -7,7 +7,9 @@
     "apps/*"
   ],
   "scripts": {
+    "start": "node scripts/start-desktop.js",
     "dev": "npm --workspace=apps/desktop run dev",
+    "preview": "npm --workspace=apps/desktop run preview",
     "build": "npm --workspace=apps/desktop run build",
     "lint": "npm --workspace=apps/desktop run lint",
     "typecheck": "npm --workspace=apps/desktop run typecheck",

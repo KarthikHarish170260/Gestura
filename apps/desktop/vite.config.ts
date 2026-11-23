@@ -4,6 +4,9 @@ import electron from 'vite-plugin-electron';
 import renderer from 'vite-plugin-electron-renderer';
 import path from 'node:path';
 
+// Prevent Electron from running in pure Node.js mode if inherited from IDE/terminal
+delete process.env.ELECTRON_RUN_AS_NODE;
+
 export default defineConfig({
   plugins: [
     react(),
