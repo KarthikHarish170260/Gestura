@@ -78,9 +78,9 @@ export function extractHandFeatures(lm: RawLandmark[]): HandPostureFeatures | nu
   const isIndexPinch = distSq(thumbTip, indexTip) < 0.004;
   const isMiddlePinch = distSq(thumbTip, middleTip) < 0.004;
   const isFist = openCount === 0 || (openCount === 1 && isThumbExt && distSq(indexTip, lm[5]) < 0.015);
-  const isFlatPalm = openCount >= 4;
+  const isWHand = isIndexExt && isMiddleExt && isRingExt && !isPinkyExt;
+  const isFlatPalm = (openCount >= 5) || (openCount === 4 && isPinkyExt && !isWHand);
   const isVictory = openCount === 2 && isIndexExt && isMiddleExt && !isRingExt && !isPinkyExt;
-  const isWHand = openCount === 3 && isIndexExt && isMiddleExt && isRingExt && !isPinkyExt;
   const isILY = openCount === 3 && isThumbExt && isIndexExt && isPinkyExt && !isMiddleExt && !isRingExt;
   const isShaka = openCount === 2 && isThumbExt && isPinkyExt && !isIndexExt && !isMiddleExt && !isRingExt;
   const isPointing = openCount === 1 && isIndexExt;
@@ -242,8 +242,7 @@ export function classifySignGesture(
   const candidateMap: Record<string, number> = {};
 
   // 1. HELLO / GREETING:
-  // Requires open flat palm near the temple/ear/head zone!
-  // If the hand is down by the chest, it is NOT HELLO!
+  // Requires open flat palm near the temple/ear/head zone
   if (dom.isFlatPalm && isNearTemple && domWrist.y < avgShoulderY) {
     candidateMap['HELLO'] = 0.95;
     candidateMap['GOODBYE'] = 0.82;
@@ -258,8 +257,8 @@ export function classifySignGesture(
 
   // 3. THANK-YOU:
   // Flat hand starting at lips/chin or moving forward from mouth toward chest
-  if (dom.isFlatPalm && isNearMouth) {
-    candidateMap['THANK-YOU'] = 0.94;
+  if (dom.isFlatPalm && (isNearMouth || (domTip.y < avgShoulderY && domWrist.y < avgShoulderY + 0.10 && !isNearTemple))) {
+    candidateMap['THANK-YOU'] = 0.95;
     candidateMap['GOOD'] = 0.85;
   }
 
@@ -278,12 +277,12 @@ export function classifySignGesture(
   }
 
   // 6. WATER:
-  // W-shape (index, middle, ring extended) near mouth/chin
-  if (dom.isWHand && isNearMouth) {
-    candidateMap['WATER'] = 0.96;
+  // W-shape (index, middle, ring extended, pinky curled) anywhere in view or near chin/mouth
+  if (dom.isWHand || (dom.isIndexExt && dom.isMiddleExt && dom.isRingExt && !dom.isPinkyExt)) {
+    candidateMap['WATER'] = 0.98;
     candidateMap['FOOD'] = 0.70;
-  } else if (dom.isWHand) {
-    candidateMap['WATER'] = 0.88;
+  } else if (dom.openCount === 3 && isNearMouth) {
+    candidateMap['WATER'] = 0.95;
   }
 
   // 7. FOOD / EAT:
@@ -295,9 +294,9 @@ export function classifySignGesture(
 
   // 8. HELP:
   // Two hands: non-dominant flat palm, dominant fist/thumb-up resting on top
-  if (twoHandsPresent && nonDom && handsDistance < 0.22) {
+  if (twoHandsPresent && nonDom && handsDistance < 0.30) {
     if (nonDom.isFlatPalm && dom.isFist) {
-      candidateMap['HELP'] = 0.97;
+      candidateMap['HELP'] = 0.98;
       candidateMap['WORK'] = 0.75;
     } else if (dom.isFist && nonDom.isFist) {
       candidateMap['WORK'] = 0.95;
@@ -324,19 +323,18 @@ export function classifySignGesture(
   }
 
   // 11. YES:
-  // Fist nodding up/down in front of body or thumbs up
+  // Thumbs up or nodding fist (not on center chest, which is SORRY)
   if (dom.openCount === 1 && dom.isThumbExt && dom.thumbTipPos.y < dom.wristPos.y) {
-    // Only if not resting down low
     if (!isRestingLow) {
-      candidateMap['YES'] = 0.94;
+      candidateMap['YES'] = 0.95;
       candidateMap['GOOD'] = 0.91;
     }
   }
 
   // 12. NO:
-  // Thumbs down or index+middle snapping onto thumb
+  // Thumbs down or index pointing wagging
   if (dom.openCount === 1 && dom.isThumbExt && dom.thumbTipPos.y > dom.wristPos.y + 0.04) {
-    candidateMap['NO'] = 0.93;
+    candidateMap['NO'] = 0.94;
     candidateMap['BAD'] = 0.92;
   }
 
@@ -404,6 +402,67 @@ export function classifySignGesture(
   if (dom.isIndexPinch && isChestCenter) {
     candidateMap['EMERGENCY'] = 0.89;
     candidateMap['DANGER'] = 0.82;
+  }
+
+  // -------------------------------------------------------------
+  // LOCKED 15 PHARMACY SIGNS SPATIAL RECOGNITION RULES
+  // -------------------------------------------------------------
+  // 22. PAIN (index fingers pointing toward each other or pointing at chest)
+  if (twoHandsPresent && nonDom && dom.isPointing && nonDom.isPointing && handsDistance < 0.35) {
+    candidateMap['PAIN'] = 0.97;
+    candidateMap['HELP'] = 0.70;
+  } else if (dom.isPointing && isChestCenter && !isNearForehead) {
+    candidateMap['PAIN'] = Math.max(candidateMap['PAIN'] ?? 0, 0.90);
+  }
+
+  // 23. HEADACHE (pointing at temple or forehead above shoulder line)
+  if (dom.isPointing && (isNearForehead || (isNearTemple && domWrist.y < avgShoulderY))) {
+    candidateMap['HEADACHE'] = 0.96;
+    candidateMap['PAIN'] = Math.max(candidateMap['PAIN'] ?? 0, 0.88);
+  }
+
+  // 24. FEVER (open palm flat against forehead, wrist raised to forehead level)
+  if (dom.isFlatPalm && isNearForehead && domWrist.y < normNose.y + 0.08) {
+    candidateMap['FEVER'] = 0.96;
+    candidateMap['HEADACHE'] = 0.80;
+  }
+
+  // 25. COUGH (fist directly over mouth)
+  if (dom.isFist && isNearMouth && !twoHandsPresent) {
+    candidateMap['COUGH'] = 0.95;
+    candidateMap['COLD'] = 0.80;
+  }
+
+  // 26. COLD (two fists in front of chest)
+  if (twoHandsPresent && nonDom && dom.isFist && nonDom.isFist && handsDistance < 0.35) {
+    candidateMap['COLD'] = 0.96;
+    candidateMap['COUGH'] = 0.75;
+  }
+
+  // 27. ALLERGY (finger touching nose)
+  if (dom.isPointing && dist(domTip, normNose) < 0.12) {
+    candidateMap['ALLERGY'] = 0.95;
+    candidateMap['COLD'] = 0.78;
+  }
+
+  // 28. MEDICINE (fingers tapping or rubbing non-dominant open palm, not a fist which is HELP)
+  if (twoHandsPresent && nonDom && nonDom.isFlatPalm && !dom.isFlatPalm && !dom.isFist && handsDistance < 0.30) {
+    candidateMap['MEDICINE'] = 0.96;
+    candidateMap['HELP'] = 0.72;
+  } else if ((dom.isIndexPinch || dom.isMiddlePinch) && isNearMouth) {
+    candidateMap['MEDICINE'] = Math.max(candidateMap['MEDICINE'] ?? 0, 0.94);
+  }
+
+  // 29. MORNING (dominant open hand rising above non-dominant horizontal arm)
+  if (twoHandsPresent && nonDom && dom.isFlatPalm && domWrist.y < nonDom.wristPos.y + 0.02 && handsDistance < 0.35) {
+    candidateMap['MORNING'] = 0.95;
+    candidateMap['HELLO'] = 0.75;
+  }
+
+  // 30. NIGHT (dominant hand dropping over non-dominant wrist)
+  if (twoHandsPresent && nonDom && domWrist.y >= nonDom.wristPos.y - 0.05 && handsDistance < 0.28) {
+    candidateMap['NIGHT'] = 0.94;
+    candidateMap['TIME'] = 0.78;
   }
 
   // Determine top candidates

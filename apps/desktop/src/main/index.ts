@@ -46,7 +46,7 @@ function createWindow(): void {
     height: 940,
     minWidth: 1280,
     minHeight: 720,
-    backgroundColor: '#020617',
+    backgroundColor: '#FAFAF7',
     webPreferences: {
       preload: fs.existsSync(path.join(__dirname, '../preload/index.cjs'))
         ? path.join(__dirname, '../preload/index.cjs')

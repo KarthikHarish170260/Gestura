@@ -39,6 +39,15 @@ apps/desktop/dist/
 apps/desktop/out/
 apps/desktop/release/
 .vite/
+test-results/
+playwright-report/
+*.tsbuildinfo
+apps/web/.svelte-kit/
+apps/web/build/
+.next/
+apps/web/.next/
+apps/web/public/wasm/
+apps/web/public/models/
 
 # Database & Runtime Data
 *.sqlite3

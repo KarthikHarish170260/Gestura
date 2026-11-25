@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-test.describe('GESTURA WCAG 2.2 AA Accessibility Audit', () => {
-  test('Conversation screen has no critical accessibility violations', async ({ page }) => {
+test.describe('GESTURA WCAG 2.2 AA Accessibility Audit - Pharmacy Screens', () => {
+  test('Pharmacy Home screen has no critical accessibility violations', async ({ page }) => {
     await page.goto('/');
 
     const accessibilityScanResults = await new AxeBuilder({ page })
@@ -13,14 +13,14 @@ test.describe('GESTURA WCAG 2.2 AA Accessibility Audit', () => {
       (v) => v.impact === 'critical' || v.impact === 'serious'
     );
     if (criticalViolations.length > 0) {
-      console.log('Conversation violations:', criticalViolations.map(v => ({ id: v.id, help: v.help, count: v.nodes.length, targets: v.nodes.map(n => n.target) })));
+      console.log('Home violations:', criticalViolations.map(v => ({ id: v.id, help: v.help })));
     }
     expect(criticalViolations).toEqual([]);
   });
 
-  test('Recorder & Train screen has no critical accessibility violations', async ({ page }) => {
+  test('Sign to Pharmacist screen has no critical accessibility violations', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: 'Recorder & Train' }).click();
+    await page.getByRole('button', { name: /Sign to Pharmacist/i }).click();
 
     const accessibilityScanResults = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
@@ -30,14 +30,14 @@ test.describe('GESTURA WCAG 2.2 AA Accessibility Audit', () => {
       (v) => v.impact === 'critical' || v.impact === 'serious'
     );
     if (criticalViolations.length > 0) {
-      console.log('Conversation violations:', criticalViolations.map(v => ({ id: v.id, help: v.help, count: v.nodes.length, targets: v.nodes.map(n => n.target) })));
+      console.log('Sign screen violations:', criticalViolations.map(v => ({ id: v.id, help: v.help })));
     }
     expect(criticalViolations).toEqual([]);
   });
 
-  test('Sessions screen has no critical accessibility violations', async ({ page }) => {
+  test('Pharmacist Reply screen has no critical accessibility violations', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: 'Sessions' }).click();
+    await page.getByRole('button', { name: /Pharmacist Reply/i }).click();
 
     const accessibilityScanResults = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
@@ -47,14 +47,14 @@ test.describe('GESTURA WCAG 2.2 AA Accessibility Audit', () => {
       (v) => v.impact === 'critical' || v.impact === 'serious'
     );
     if (criticalViolations.length > 0) {
-      console.log('Conversation violations:', criticalViolations.map(v => ({ id: v.id, help: v.help, count: v.nodes.length, targets: v.nodes.map(n => n.target) })));
+      console.log('Reply screen violations:', criticalViolations.map(v => ({ id: v.id, help: v.help })));
     }
     expect(criticalViolations).toEqual([]);
   });
 
-  test('Settings screen has no critical accessibility violations', async ({ page }) => {
+  test('Practice Studio screen has no critical accessibility violations', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: 'Settings' }).click();
+    await page.getByRole('button', { name: /Practice/i }).first().click();
 
     const accessibilityScanResults = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
@@ -64,23 +64,25 @@ test.describe('GESTURA WCAG 2.2 AA Accessibility Audit', () => {
       (v) => v.impact === 'critical' || v.impact === 'serious'
     );
     if (criticalViolations.length > 0) {
-      console.log('Conversation violations:', criticalViolations.map(v => ({ id: v.id, help: v.help, count: v.nodes.length, targets: v.nodes.map(n => n.target) })));
+      console.log('Practice violations:', criticalViolations.map(v => ({ id: v.id, help: v.help })));
     }
     expect(criticalViolations).toEqual([]);
   });
 
-  test('Keyboard navigation: tab through main navigation tabs and conversation controls', async ({ page }) => {
+  test('Session History screen has no critical accessibility violations', async ({ page }) => {
     await page.goto('/');
+    await page.getByRole('button', { name: /History/i }).first().click();
 
-    // Press Tab multiple times and verify focus moves across elements
-    await page.keyboard.press('Tab');
-    const focusedTag = await page.evaluate(() => document.activeElement?.tagName);
-    expect(['BUTTON', 'A', 'INPUT', 'SELECT']).toContain(focusedTag);
+    const accessibilityScanResults = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
 
-    // Verify Tab navigation reaches the tabs
-    await page.keyboard.press('Tab');
-    await page.keyboard.press('Tab');
-    const activeText = await page.evaluate(() => document.activeElement?.textContent);
-    expect(activeText).toBeTruthy();
+    const criticalViolations = accessibilityScanResults.violations.filter(
+      (v) => v.impact === 'critical' || v.impact === 'serious'
+    );
+    if (criticalViolations.length > 0) {
+      console.log('History violations:', criticalViolations.map(v => ({ id: v.id, help: v.help })));
+    }
+    expect(criticalViolations).toEqual([]);
   });
 });

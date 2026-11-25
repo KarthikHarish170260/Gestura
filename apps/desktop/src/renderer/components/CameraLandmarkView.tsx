@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { FilesetResolver, HandLandmarker, PoseLandmarker } from '@mediapipe/tasks-vision';
 import { useConversationStore } from '../store/conversationStore';
+import { useErKioskStore } from '../er/erKioskStore';
 import { RawLandmark } from '../workers/visionWorker';
 import { classifySignGesture, KinematicHoldGater } from '../recognition/spatialSignClassifier';
 
@@ -817,6 +818,11 @@ export const CameraLandmarkView: React.FC = () => {
               });
 
               addSignToBuffer(committed);
+              try {
+                useErKioskStore.getState().addSignToSequence(committed, recog.confidence);
+              } catch {
+                // Drop safely
+              }
               if (settings.ttsVolume > 0) {
                 speakText(committed);
               }
@@ -859,6 +865,11 @@ export const CameraLandmarkView: React.FC = () => {
     ]);
 
     addSignToBuffer(gloss);
+    try {
+      useErKioskStore.getState().addSignToSequence(gloss, confidence);
+    } catch {
+      // Drop safely
+    }
     if (settings.ttsVolume > 0) {
       speakText(gloss);
     }

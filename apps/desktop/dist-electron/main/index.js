@@ -112,7 +112,7 @@ class $ {
     }
   }
 }
-const A = w(import.meta.url), l = s.dirname(A), { app: p, BrowserWindow: y, ipcMain: I, session: U, protocol: f } = E;
+const A = w(import.meta.url), l = s.dirname(A), { app: p, BrowserWindow: y, ipcMain: F, session: I, protocol: f } = E;
 f && f.registerSchemesAsPrivileged && f.registerSchemesAsPrivileged([
   {
     scheme: "file",
@@ -137,7 +137,7 @@ function S() {
     height: 940,
     minWidth: 1280,
     minHeight: 720,
-    backgroundColor: "#020617",
+    backgroundColor: "#FAFAF7",
     webPreferences: {
       preload: d.existsSync(s.join(l, "../preload/index.cjs")) ? s.join(l, "../preload/index.cjs") : s.join(l, "../preload/index.js"),
       sandbox: !1,
@@ -148,7 +148,7 @@ function S() {
     },
     title: "GESTURA - Offline Sign Language Assistant",
     autoHideMenuBar: !0
-  }), n.maximize(), U.defaultSession.webRequest.onHeadersReceived((o, e) => {
+  }), n.maximize(), I.defaultSession.webRequest.onHeadersReceived((o, e) => {
     e({
       responseHeaders: {
         ...o.responseHeaders,
@@ -167,7 +167,7 @@ function S() {
     n = null;
   });
 }
-I.handle("app:get-sidecar-config", () => ({
+F.handle("app:get-sidecar-config", () => ({
   port: x,
   token: v,
   host: b
