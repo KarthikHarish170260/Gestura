@@ -51,10 +51,11 @@ test.describe('GESTURA Pharmacy Counter End-to-End Flow', () => {
     // Step 4: Click Quick Phrase "Morning and night"
     await page.getByRole('button', { name: 'Morning and night', exact: true }).click();
 
-    // Verify Gloss Sequence contains MORNING and NIGHT cards
+    // Verify Gloss Sequence contains MORNING and NIGHT cards and animated sign canvas is visible
     await expect(page.getByText('Sign Gloss Sequence:')).toBeVisible();
     await expect(page.locator('text=Morning').first()).toBeVisible();
     await expect(page.locator('text=Night').first()).toBeVisible();
+    await expect(page.locator('canvas[aria-label*="Animated sign demonstration"]')).toBeVisible();
 
     // Step 5: Verify Session History Preview has the exchange
     await expect(page.getByText('Session History Preview')).toBeVisible();

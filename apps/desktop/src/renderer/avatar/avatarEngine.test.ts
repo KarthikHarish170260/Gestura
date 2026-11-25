@@ -18,12 +18,29 @@ describe('Avatar Templates and Kinematics', () => {
     }
   });
 
-  it('retrieves gloss clips for vocabulary words with non-zero duration', () => {
-    for (const gloss of ['HELLO', 'THANK-YOU', 'HELP', 'DOCTOR', 'WATER']) {
+  it('retrieves gloss clips for all 15 pharmacy vocabulary words with non-zero duration', () => {
+    const pharmacyGlosses = [
+      'HELLO',
+      'THANK-YOU',
+      'YES',
+      'NO',
+      'HELP',
+      'PAIN',
+      'HEADACHE',
+      'FEVER',
+      'COUGH',
+      'COLD',
+      'ALLERGY',
+      'MEDICINE',
+      'WATER',
+      'MORNING',
+      'NIGHT',
+    ];
+    for (const gloss of pharmacyGlosses) {
       const clip = getGlossClip(gloss);
       expect(clip.gloss).toBe(gloss);
       expect(clip.durationMs).toBeGreaterThan(0);
-      expect(clip.keyframes.length).toBeGreaterThan(1);
+      expect(clip.keyframes.length).toBeGreaterThan(2);
     }
   });
 

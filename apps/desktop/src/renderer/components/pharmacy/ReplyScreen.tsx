@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Mic,
   MicOff,
@@ -7,6 +7,9 @@ import {
   ArrowLeft,
   Clock,
   Volume2,
+  Play,
+  Pause,
+  FastForward,
 } from 'lucide-react';
 import {
   PHARMACY_SIGNS,
@@ -14,10 +17,29 @@ import {
   PHARMACY_QUICK_PHRASES,
 } from '../../config/pharmacySigns';
 import { useConversationStore } from '../../store/conversationStore';
+import { AvatarEngine } from '../../avatar/avatarEngine';
 
 interface ReplyScreenProps {
   onNavigate: (screen: 'home' | 'sign' | 'reply' | 'summary' | 'practice' | 'history') => void;
 }
+
+const SIGN_MOTION_CUES: Record<string, string> = {
+  HELLO: 'Open hand raised near temple, waving outward.',
+  'THANK-YOU': 'Flat palm touches chin and extends forward.',
+  YES: 'Closed fist nods up and down twice.',
+  NO: 'Index, middle, and thumb tap closed twice.',
+  HELP: 'Thumbs-up fist lifts upward on flat base palm.',
+  PAIN: 'Both index fingers point and pulse inward twice.',
+  HEADACHE: 'Index finger taps near temple twice.',
+  FEVER: 'Flat open palm rests horizontally on forehead.',
+  COUGH: 'Curved fist rises to mouth and pulses twice.',
+  COLD: 'Both fists curl at chest and shiver side-to-side.',
+  ALLERGY: 'Index finger sweeps along opposite forearm.',
+  MEDICINE: 'Middle fingertip taps twice onto open palm.',
+  WATER: 'W-handshape taps chin twice.',
+  MORNING: 'Right palm rises up from base arm (sunrise).',
+  NIGHT: 'Curved right hand arcs down over base wrist (sunset).',
+};
 
 export const ReplyScreen: React.FC<ReplyScreenProps> = ({ onNavigate }) => {
   const { utterances, addUtterance, settings } = useConversationStore();
@@ -28,22 +50,68 @@ export const ReplyScreen: React.FC<ReplyScreenProps> = ({ onNavigate }) => {
     text: string;
     glosses: string[];
     activeClipIndex: number;
+    playbackId: number;
   }>({
     text: 'Morning and night with water',
     glosses: ['MORNING', 'NIGHT', 'WATER'],
     activeClipIndex: 0,
+    playbackId: 1,
   });
 
-  const [clipPlaying, setClipPlaying] = useState(false);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [clipPlaying, setClipPlaying] = useState(true);
+  const [isPaused, setIsPaused] = useState(false);
+  const [speed, setSpeed] = useState(1.0);
+
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const engineRef = useRef<AvatarEngine | null>(null);
   const recognitionRef = useRef<any>(null);
 
-  // Parse glosses from English text using 15-sign ontology
+  // Initialize 60fps skeletal AvatarEngine on mount
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.width = 640;
+    canvas.height = 520;
+
+    try {
+      const engine = new AvatarEngine(canvas);
+      engine.onGlossProgress((_gloss, index) => {
+        setClipPlaying(true);
+        setIsPaused(false);
+        setActiveReply((prev) => ({
+          ...prev,
+          activeClipIndex: index >= 0 ? index : 0,
+        }));
+      });
+      engine.onSequenceComplete(() => {
+        setClipPlaying(false);
+        setIsPaused(false);
+      });
+      engine.start();
+      engineRef.current = engine;
+
+      return () => {
+        engine.stop();
+        engineRef.current = null;
+      };
+    } catch {
+      return undefined;
+    }
+  }, []);
+
+  // Trigger avatar animation whenever activeReply sequence or playbackId updates
+  useEffect(() => {
+    const engine = engineRef.current;
+    if (!engine || activeReply.glosses.length === 0) return;
+    setClipPlaying(true);
+    setIsPaused(false);
+    engine.setGlossSequence(activeReply.glosses);
+  }, [activeReply.glosses, activeReply.playbackId]);
+
+  // Parse glosses from English text ordered by position in sentence
   const parseGlossesFromText = (text: string): string[] => {
     const upper = text.toUpperCase();
-    const matched: string[] = [];
 
-    // Check quick phrase exact matches first
     const quick = PHARMACY_QUICK_PHRASES.find(
       (q) => q.text.toLowerCase() === text.trim().toLowerCase()
     );
@@ -51,45 +119,52 @@ export const ReplyScreen: React.FC<ReplyScreenProps> = ({ onNavigate }) => {
       return quick.glosses;
     }
 
-    // Otherwise match keywords in the 15 signs
+    const hits: Array<{ gloss: string; pos: number }> = [];
     PHARMACY_SIGNS.forEach((s) => {
-      if (
-        upper.includes(s.gloss) ||
-        upper.includes(s.label.toUpperCase()) ||
-        upper.includes(s.spokenText.toUpperCase())
-      ) {
-        if (!matched.includes(s.gloss)) {
-          matched.push(s.gloss);
+      const candidates = [s.gloss, s.label.toUpperCase(), s.spokenText.toUpperCase()];
+      let bestPos = -1;
+      for (const c of candidates) {
+        const idx = upper.indexOf(c);
+        if (idx !== -1 && (bestPos === -1 || idx < bestPos)) {
+          bestPos = idx;
         }
+      }
+      if (bestPos !== -1) {
+        hits.push({ gloss: s.gloss, pos: bestPos });
       }
     });
 
+    hits.sort((a, b) => a.pos - b.pos);
+    const matched = Array.from(new Set(hits.map((h) => h.gloss)));
     return matched.length > 0 ? matched : ['MEDICINE'];
   };
 
-  // Speak reply text using TTS
-  const speakReply = (text: string) => {
-    if ('speechSynthesis' in window && text.trim().length > 0) {
-      window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      u.rate = settings.ttsRate || 1.0;
-      u.volume = settings.ttsVolume ?? 1.0;
-      window.speechSynthesis.speak(u);
-    }
-  };
+  // Speak reply text using offline browser/system TTS
+  const speakReply = useCallback(
+    (text: string) => {
+      if ('speechSynthesis' in window && text.trim().length > 0) {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = settings.ttsRate || 1.0;
+        u.volume = settings.ttsVolume ?? 1.0;
+        window.speechSynthesis.speak(u);
+      }
+    },
+    [settings.ttsRate, settings.ttsVolume]
+  );
 
   // Submit Pharmacist Reply
   const handleSendReply = (textToSend: string) => {
     if (!textToSend.trim()) return;
 
     const glosses = parseGlossesFromText(textToSend);
-    setActiveReply({
+    setActiveReply((prev) => ({
       text: textToSend.trim(),
       glosses,
       activeClipIndex: 0,
-    });
+      playbackId: prev.playbackId + 1,
+    }));
 
-    // Add to session utterances
     addUtterance({
       id: `reply-${Date.now()}`,
       direction: 'speech_to_sign',
@@ -145,18 +220,48 @@ export const ReplyScreen: React.FC<ReplyScreenProps> = ({ onNavigate }) => {
     }
   };
 
-  // Play Again logic
+  // Play Again replays the entire gloss sequence from start
   const handlePlayAgain = () => {
-    setClipPlaying(true);
-    if (videoRef.current) {
-      videoRef.current.currentTime = 0;
-      videoRef.current.play().catch(() => {});
-    }
-    setTimeout(() => setClipPlaying(false), 2500);
+    setActiveReply((prev) => ({
+      ...prev,
+      activeClipIndex: 0,
+      playbackId: prev.playbackId + 1,
+    }));
   };
 
-  // Current sign config for active clip
-  const currentGloss = activeReply.glosses[activeReply.activeClipIndex] || 'MEDICINE';
+  // Jump to and animate a single sign card immediately when clicked
+  const handlePlaySingleGloss = (idx: number) => {
+    const targetGloss = activeReply.glosses[idx];
+    if (!targetGloss) return;
+    setActiveReply((prev) => ({ ...prev, activeClipIndex: idx }));
+    setClipPlaying(true);
+    setIsPaused(false);
+    engineRef.current?.setGlossSequence([targetGloss]);
+  };
+
+  const togglePlayPause = () => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    if (!clipPlaying) {
+      handlePlayAgain();
+      return;
+    }
+    if (isPaused) {
+      engine.resume();
+      setIsPaused(false);
+    } else {
+      engine.pause();
+      setIsPaused(true);
+    }
+  };
+
+  const cycleSpeed = () => {
+    const nextSpeed = speed === 1.0 ? 0.75 : speed === 0.75 ? 1.5 : 1.0;
+    setSpeed(nextSpeed);
+    engineRef.current?.setSpeed(nextSpeed);
+  };
+
+  const currentGloss = activeReply.glosses[activeReply.activeClipIndex] || activeReply.glosses[0] || 'MEDICINE';
   const currentSignConfig = PHARMACY_SIGN_MAP[currentGloss];
 
   return (
@@ -239,7 +344,7 @@ export const ReplyScreen: React.FC<ReplyScreenProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* 3. Reply Display Area: 28px+ text, gloss sequence, clip player */}
+      {/* 3. Reply Display Area: 28px+ text, gloss sequence, live 60fps sign avatar */}
       <div className="bg-white p-8 rounded-3xl border border-[#E2E8F0] shadow-sm mb-6">
         <div className="flex items-center justify-between mb-4">
           <span className="text-xs font-bold uppercase tracking-wider text-[#0F766E] bg-[#0F766E]/10 px-3 py-1 rounded-full">
@@ -273,9 +378,7 @@ export const ReplyScreen: React.FC<ReplyScreenProps> = ({ onNavigate }) => {
                 <button
                   key={`${gloss}-${idx}`}
                   type="button"
-                  onClick={() =>
-                    setActiveReply((prev) => ({ ...prev, activeClipIndex: idx }))
-                  }
+                  onClick={() => handlePlaySingleGloss(idx)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-all ${
                     isCurrent
                       ? 'bg-[#0F766E] text-white border-[#0F766E] shadow-md scale-105'
@@ -301,39 +404,63 @@ export const ReplyScreen: React.FC<ReplyScreenProps> = ({ onNavigate }) => {
           </div>
         </div>
 
-        {/* Clip Player or Clean Gloss Card */}
-        <div className="flex flex-col sm:flex-row items-center gap-6 p-6 rounded-2xl bg-[#FAFAF7] border border-[#E2E8F0]">
-          {/* Sign Visual Stage */}
-          <div className="w-48 h-48 rounded-2xl bg-white border border-[#E2E8F0] shadow-sm flex flex-col items-center justify-center p-4 text-center">
-            {currentSignConfig?.clipPath ? (
-              <video
-                ref={videoRef}
-                src={currentSignConfig.clipPath}
-                className="w-full h-full object-contain rounded-xl"
-                muted
-                playsInline
-                onError={() => {
-                  // Handled cleanly via fallback
-                }}
+        {/* Live 60fps Sign Avatar Player + Controls */}
+        <div className="flex flex-col sm:flex-row items-stretch gap-6 p-6 rounded-2xl bg-[#FAFAF7] border border-[#E2E8F0]">
+          {/* Animated Skeletal Avatar Stage */}
+          <div className="w-full sm:w-72 shrink-0 rounded-2xl bg-[#0F172A] border border-slate-800 shadow-md overflow-hidden flex flex-col">
+            <div className="relative flex-1 min-h-[220px] flex items-center justify-center">
+              <canvas
+                ref={canvasRef}
+                aria-label={`Animated sign demonstration for ${currentSignConfig?.label || currentGloss}`}
+                className="w-full h-full object-contain block"
               />
-            ) : null}
+              <div className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full bg-slate-900/85 px-2.5 py-1 border border-teal-500/40 backdrop-blur">
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    clipPlaying && !isPaused ? 'bg-teal-400 animate-pulse' : 'bg-slate-400'
+                  }`}
+                />
+                <span className="text-[11px] font-bold tracking-wide text-teal-200 uppercase">
+                  {currentSignConfig?.label || currentGloss}
+                </span>
+              </div>
+            </div>
 
-            {/* Clean Animated Gloss Card */}
-            <div className="flex flex-col items-center justify-center">
-              <div className="w-14 h-14 rounded-2xl bg-[#0F766E]/10 text-[#0F766E] flex items-center justify-center font-black text-2xl mb-2">
-                {currentGloss.charAt(0)}
-              </div>
-              <div className="text-xl font-extrabold text-[#1E293B]">
-                {currentSignConfig?.label || currentGloss}
-              </div>
-              <div className="text-xs font-medium text-slate-500 mt-1">
-                {currentSignConfig?.hasTrainingData ? 'Model Verified' : 'Standard Sign'}
-              </div>
+            {/* Compact Player Controls Bar */}
+            <div className="flex items-center justify-between px-3 py-2 bg-slate-900 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={togglePlayPause}
+                aria-label={clipPlaying && !isPaused ? 'Pause sign animation' : 'Play sign animation'}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors"
+              >
+                {clipPlaying && !isPaused ? (
+                  <>
+                    <Pause className="w-3.5 h-3.5 text-teal-400" />
+                    <span>Pause</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-3.5 h-3.5 text-teal-400" />
+                    <span>Play</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={cycleSpeed}
+                aria-label={`Playback speed ${speed}x`}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-semibold transition-colors"
+              >
+                <FastForward className="w-3.5 h-3.5 text-teal-400" />
+                <span>{speed}x</span>
+              </button>
             </div>
           </div>
 
-          {/* Player Controls & Info */}
-          <div className="flex-1 flex flex-col justify-between">
+          {/* Player Info & Replay Button */}
+          <div className="flex-1 flex flex-col justify-between py-1">
             <div>
               <div className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">
                 Demonstrated Sign
@@ -344,15 +471,24 @@ export const ReplyScreen: React.FC<ReplyScreenProps> = ({ onNavigate }) => {
               <p className="text-sm text-slate-600 mt-2">
                 Demonstrating the sign for &ldquo;{currentSignConfig?.spokenText || currentGloss}&rdquo; so the sign-language patient can visually confirm the instruction.
               </p>
+
+              {SIGN_MOTION_CUES[currentGloss] && (
+                <div className="mt-4 p-3.5 rounded-xl bg-white border border-[#E2E8F0] text-xs text-slate-600">
+                  <span className="font-bold text-[#0F766E] uppercase tracking-wider mr-1.5">
+                    Sign Cue:
+                  </span>
+                  <span>{SIGN_MOTION_CUES[currentGloss]}</span>
+                </div>
+              )}
             </div>
 
-            <div className="mt-6 flex items-center gap-3">
+            <div className="mt-6 flex flex-wrap items-center gap-3">
               <button
                 type="button"
                 onClick={handlePlayAgain}
                 className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#0F766E] hover:bg-[#0D655E] text-white font-bold text-base shadow transition-all active:scale-95"
               >
-                <RotateCcw className={`w-4 h-4 ${clipPlaying ? 'animate-spin' : ''}`} />
+                <RotateCcw className={`w-4 h-4 ${clipPlaying && !isPaused ? 'animate-spin' : ''}`} />
                 <span>Play Again</span>
               </button>
             </div>
